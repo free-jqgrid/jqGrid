@@ -16804,7 +16804,9 @@
 	};
 	$.fn.fmatter = $FnFmatter;
 	$FnFmatter.getCellBuilder = function (formatType, opts, act) {
-		var cellBuilder = $.fn.fmatter[formatType].getCellBuilder;
+        	// JMM - Fix to deal with format type = 'string'
+		var cellBuilder = $.fn.fmatter[formatType] ? $.fn.fmatter[formatType].getCellBuilder : $.fn.fmatter.defaultFormat.getCellBuilder;
+
 		return $.isFunction(cellBuilder) ?
 			cellBuilder.call(this, $.extend({}, getGridRes.call($(this), "formatter"), opts), act) :
 			null;
