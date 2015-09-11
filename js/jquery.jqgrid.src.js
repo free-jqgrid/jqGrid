@@ -2085,6 +2085,7 @@
 					//showOneSortIcon: pin.showOneSortIcon !== undefined ? pin.showOneSortIcon :
 					//    pin.iconSet === "fontAwesome" ? true : false, // hide or set ui-state-disabled class on the other icon
 					sortname: "",
+					sortmode: 2, // toggles 2 state (asc/desc) or 3 state (asc/desc/no) sorting.
 					//datatype: pin.datatype !== undefined ? pin.datatype : // datatype parameter are specified - use it
 					//    localData !== undefined || pin.url == null ? "local" : // data parameter specified or no url are specified
 					//        pin.jsonReader != null && typeof pin.jsonReader === "object" ? "json" : "xml", // if jsonReader are specified - use "json". In all other cases - use "xml"
@@ -4137,7 +4138,9 @@
 						if (p.lastsort === idxcol && p.sortname !== "") {
 							if (p.sortorder === "asc") {
 								p.sortorder = "desc";
-							} else if (p.sortorder === "desc") { p.sortorder = "asc"; }
+							} else if (p.sortorder === "desc") {
+								p.sortorder = (p.sortmode === 3) ? "" : "asc";
+							} else if (p.sortmode === 3 && p.sortorder === "") { p.sortorder = "asc"; }
 						} else { p.sortorder = p.colModel[idxcol].firstsortorder || "asc"; }
 						p.page = 1;
 					}
