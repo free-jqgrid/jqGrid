@@ -8970,8 +8970,8 @@
 							top = top + $(grid.uDiv).outerHeight();
 						}
 					}
-					grid.fhDiv = $('<div style="position:absolute;overflow:hidden;" + (p.direction === "rtl" ? "right:0;" : "left:0;") + "top:' + top + 'px;height:' + hth + 'px;" class="' + getGuiStyles.call($t, "hDiv", "frozen-div ui-jqgrid-hdiv") + '"></div>');
-					grid.fbDiv = $('<div style="position:absolute;overflow:hidden;" + (p.direction === "rtl" ? "right:0;" : "left:0;") + "top:' + (parseInt(top, 10) + parseInt(hth, 10) + 1) + 'px;overflow:hidden" class="frozen-bdiv ui-jqgrid-bdiv"></div>');
+					grid.fhDiv = $('<div style="position:absolute;overflow:hidden;' + (p.direction === "rtl" ? "right:0;" : "left:0;") + 'top:' + top + 'px;height:' + hth + 'px;" class="' + getGuiStyles.call($t, "hDiv", "frozen-div ui-jqgrid-hdiv") + '"></div>');
+					grid.fbDiv = $('<div style="position:absolute;overflow:hidden;' + (p.direction === "rtl" ? "right:0;" : "left:0;") + 'top:' + (parseInt(top, 10) + parseInt(hth, 10) + 1) + 'px;overflow:hidden" class="frozen-bdiv ui-jqgrid-bdiv"></div>');
 					$(p.gView).append(grid.fhDiv);
 					var htbl = $(".ui-jqgrid-htable", p.gView).clone(true);
 					/*if ($t.ftoolbar) {
