@@ -9123,7 +9123,7 @@
 									if (p.groupHeader != null && p.groupHeader.useColSpanStyle && height === 0) {
 										height = 0;
 										for (i = 0; i < maxfrozen; i++) { // maxfrozen
-											if ($row[0].cells[i].nodeName.toUpperCase() === "TH") {
+											if (row[0].cells[i] != undefined && $row[0].cells[i].nodeName.toUpperCase() === "TH") {
 												height = Math.max(height, $($row[0].cells[i]).height());
 											}
 										}
