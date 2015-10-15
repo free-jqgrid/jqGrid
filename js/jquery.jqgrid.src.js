@@ -11982,9 +11982,6 @@
 							viewModal("#" + jqID(alertIDs.themodal), { gbox: gboxSelector, toTop: o.alertToTop, jqm: o.jqModal });
 							var $close = $("#" + jqID(alertIDs.modalhead)).find(".ui-jqdialog-titlebar-close");
 							$close.attr({ tabindex: "0", href: "#", role: "button" });
-							setTimeout(function () {
-								$close.focus(); //$(p.idSel + "_jqg_alrt").focus();
-							}, 50);
 						};
 					},
 					viewModalAlert = createModalAlert(),
