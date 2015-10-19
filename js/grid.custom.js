@@ -1044,8 +1044,15 @@
 							//$("th:gt(" + maxfrozen + ")", this).remove();
 						});
 						var swapfroz = -1, fdel = -1, cs, rs;
-						// TODO: Fix processing of hidden columns 
-						$("tr.jqg-second-row-header th", htbl).each(function () {
+						// TODO: Fix processing of hidden columns
+						
+						var $secondRowHeaders = $("tr.jqg-second-row-header th", htbl);
+
+						//get first child height and set as row height for alignment
+						var secondRowHeight = $secondRowHeaders.find(">:first-child").height();
+						$secondRowHeaders.parent().height(secondRowHeight);
+
+						$secondRowHeaders.each(function () {
 							cs = parseInt($(this).attr("colspan") || 1, 10);
 							rs = parseInt($(this).attr("rowspan") || 1, 10);
 							if (rs > 1) {
@@ -1062,7 +1069,7 @@
 						if (swapfroz !== maxfrozen) {
 							fdel = maxfrozen;
 						}
-						$("tr.jqg-second-row-header", htbl).each(function () {
+						$secondRowHeaders.each(function () {
 							$("th:gt(" + fdel + ")", this).remove();
 						});
 					} else {
