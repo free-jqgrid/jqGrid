@@ -151,116 +151,68 @@
 		},
 		groupingToggle: function (hid) {
 			this.each(function () {
-				var $t = this, p = $t.p, jqID = jgrid.jqID,
-					grp = p.groupingView,
-					minus = grp.minusicon,
-					plus = grp.plusicon,
-					tar = $("#" + jqID(hid)),
-					r = tar.length ? tar[0].nextSibling : null,
-					tarspan = $("#" + jqID(hid) + " span." + "tree-wrap-" + p.direction),
-					itemGroupingLevel,
-					showData,
-					collapsed = false,
-					frz = p.frozenColumns ? p.id + "_frozen" : false,
-					tar2 = frz ? $("#" + jqID(hid), "#" + jqID(frz)) : false,
-					r2 = (tar2 && tar2.length) ? tar2[0].nextSibling : null,
-					strpos = hid.split("_"),
-					num = parseInt(strpos[strpos.length - 2], 10),
-					uid,
-					getGroupingLevelFromClass = function (className) {
-						var nums = $.map(className.split(" "), function (item) {
-							if (item.substring(0, uid.length + 1) === uid + "_") {
-								return parseInt(item.substring(uid.length + 1), 10);
-							}
-						});
-						return nums.length > 0 ? nums[0] : undefined;
-					};
+				var $t = this;
+				var $grid = $("#gview_" + $t.id);
+				var p = $t.p;
+				var groupingConfig = p.groupingView;
+				var minusIcon = groupingConfig.minusicon.split(' ')[1];
+				var plusIcon = groupingConfig.plusicon.split(' ')[1];
+				var groupTreeLevel = groupingConfig.groupField.length; //level of tree
+				var groupHeaderSplit = hid.split("_"); //["gridghead", "0", "0"]
+				var groupName = groupHeaderSplit[0];
+				var groupLevel = parseInt(groupHeaderSplit[1]);
+				var groupNextLevel = (groupLevel + 1);
+				var groupPrevLevel = (groupLevel - 1);
 
-				strpos.splice(strpos.length - 2, 2);
-				uid = strpos.join("_");
-				if (tarspan.hasClass(minus)) {
-					// collapse
-					while (r) {
-						if ($(r).hasClass("jqfoot")) {
-							// hide all till the summary row of the same level.
-							// don't hide the summary row if grp.showSummaryOnHide === true
-							itemGroupingLevel = parseInt($(r).data("jqfootlevel"), 10);
-							if ((!grp.showSummaryOnHide && itemGroupingLevel === num) || itemGroupingLevel > num) {
-								$(r).hide();
-								if (frz) {
-									$(r2).hide();
-								}
-							}
-							if (itemGroupingLevel < num) {
-								// stop hiding of rows if the footer of parent group are found
-								break;
-							}
-						} else {
-							itemGroupingLevel = getGroupingLevelFromClass(r.className);
-							if (itemGroupingLevel !== undefined && itemGroupingLevel <= num) {
-								// stop hiding of rows if the grouping header of the next group of the same (or higher) level are found
-								break;
-							}
-							$(r).hide();
-							if (frz) {
-								$(r2).hide();
-							}
-						}
-						r = r.nextSibling;
-						if (frz) {
-							r2 = r2.nextSibling;
-						}
+				//Build header class
+				var groupMainClass = "." + groupName + "_" + groupLevel;
+
+				//Build next header level class, if above tree level, assign as blank
+				var groupNextMainClass = groupNextLevel < groupTreeLevel ? "." + groupName + "_" + groupNextLevel : "";
+
+				//Build next header level class, if already at base level (0), assign as blank
+				var groupPrevMainClass = groupPrevLevel >= 0 ? "." + groupName + "_" + groupPrevLevel : "";
+
+				//Find each will take care of frozen table overlay
+				$grid.find(".ui-jqgrid-btable tbody").each(function(index) {
+					var $hid = $(this).find("#" + hid);
+					var $hIcon = $hid.find(".ui-icon");
+					if ($hIcon.hasClass(plusIcon)) { //expand all rows under header
+						$hid.nextUntil(groupMainClass, groupNextMainClass).css('display','table-row');
+						$hIcon.removeClass(plusIcon).addClass(minusIcon);
+					} else { //collapse all rows under header
+						//Make sure we don't grab the header in the current tree level
+						var $rows = $hid.nextUntil(groupMainClass).not(groupPrevMainClass);
+						$rows.css('display','none');
+						//Toggle all icons in tree levels under the current header
+						$rows.find(".ui-icon").removeClass(minusIcon).addClass(plusIcon);
+						$hIcon.toggleClass(minusIcon).addClass(plusIcon);
 					}
-					tarspan.removeClass(minus).addClass(plus);
-					collapsed = true;
+				});
+			});
+			return false;
+		},
+		toggleAll: function (expand) {
+			this.each(function () {
+				var $t = this;
+				var $grid = $("#gview_" + $t.id);
+				var p = $t.p;
+				var groupingConfig = p.groupingView;
+				var minusIcon = groupingConfig.minusicon.split(' ')[1];
+				var plusIcon = groupingConfig.plusicon.split(' ')[1];
+
+				//All rows at every level
+				var $rows = $grid.find(".ui-row-ltr")
+
+				if (expand) {
+					$rows.css('display', 'table-row');
+					$rows.find(".ui-icon").removeClass(plusIcon).addClass(minusIcon);
 				} else {
-					// expand
-					showData = undefined;
-					while (r) {
-						if ($(r).hasClass("jqfoot")) {
-							itemGroupingLevel = parseInt($(r).data("jqfootlevel"), 10);
-							if (itemGroupingLevel === num || (grp.showSummaryOnHide && itemGroupingLevel === num + 1)) {
-								$(r).show();
-								if (frz) {
-									$(r2).show();
-								}
-							}
-							if (itemGroupingLevel <= num) {
-								break;
-							}
-						}
-						itemGroupingLevel = getGroupingLevelFromClass(r.className);
-						if (showData === undefined) {
-							showData = itemGroupingLevel === undefined; // if the first row after the opening group is data row then show the data rows
-						}
-						if (itemGroupingLevel !== undefined) {
-							if (itemGroupingLevel <= num) {
-								break;// next grouping header of the same lever are found
-							}
-							if (itemGroupingLevel === num + 1) {
-								$(r).show().find(">td>span." + "tree-wrap-" + p.direction).removeClass(minus).addClass(plus);
-								if (frz) {
-									$(r2).show().find(">td>span." + "tree-wrap-" + p.direction).removeClass(minus).addClass(plus);
-								}
-							}
-						} else if (showData) {
-							$(r).show();
-							if (frz) {
-								$(r2).show();
-							}
-						}
-						r = r.nextSibling;
-						if (frz) {
-							r2 = r2.nextSibling;
-						}
-					}
-					tarspan.removeClass(plus).addClass(minus);
+					//All rows that are not first level
+					var $treeRows = $rows.not("[class$=ghead_0]");
+					$treeRows.css('display','none');
+					$rows.find(".ui-icon").removeClass(minusIcon).addClass(plusIcon);
 				}
-				$($t).triggerHandler("jqGridGroupingClickGroup", [hid, collapsed]);
-				if ($.isFunction(p.onClickGroup)) {
-					p.onClickGroup.call($t, hid, collapsed);
-				}
-
 			});
 			return false;
 		},
