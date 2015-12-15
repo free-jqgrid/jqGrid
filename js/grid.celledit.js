@@ -235,7 +235,7 @@
 								v = vv;
 							}
 						}
-						var cv = jgrid.checkValues.call($t, v, iCol), formatoptions = cm.formatoptions || {};
+						var cv = jgrid.checkValues.call($t, v, iCol, iRow), formatoptions = cm.formatoptions || {};
 						if (cv[0] === true) {
 							var addpost = $self.triggerHandler("jqGridBeforeSubmitCell", [rowid, nm, v, iRow, iCol]) || {};
 							if ($.isFunction(p.beforeSubmitCell)) {

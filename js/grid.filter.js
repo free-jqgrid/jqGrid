@@ -149,7 +149,7 @@
 					ret = colModelItem.searchrules.call($t, val, colModelItem);
 				} else if (jgrid && jgrid.checkValues) {
 					try {
-						ret = jgrid.checkValues.call($t, val, -1, colModelItem.searchrules, colModelItem.label);
+						ret = jgrid.checkValues.call($t, val, -1, -1, colModelItem.searchrules, colModelItem.label);
 					} catch (ignore) { }
 				}
 				if (ret && ret.length && ret[0] === false) {
