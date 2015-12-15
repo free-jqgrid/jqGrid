@@ -1,13 +1,17 @@
 {
-	"preset": "crockford",
-	"validateIndentation": "\t",
-	"requireMultipleVarDecl": null,
-	"disallowDanglingUnderscores": null,
-	"requireBlocksOnNewline": null,
-	"disallowKeywords": ["with"],
-	"disallowSpaceAfterObjectKeys": true,
-	//"validateQuoteMarks": "\"",
-	"requireSpaceAfterComma": {"allExcept": ["trailing"]},
-	"requireSpacesInsideObjectBrackets": "all",
-	"requireVarDeclFirst": null
+  "preset": "crockford",
+  "validateIndentation": {
+    "value": "\t",
+    "allExcept": ["comments"]
+  },
+  "requireMultipleVarDecl": null,
+  "disallowDanglingUnderscores": null,
+  "requireBlocksOnNewline": null,
+  "disallowKeywords": ["with"],
+  "disallowSpaceAfterObjectKeys": true,
+  "requireSpaceAfterComma": {
+    "allExcept": ["trailing"]
+  },
+  "requireVarDeclFirst": null,
+  "disallowTrailingWhitespace": "ignoreEmptyLines",
 }

@@ -483,7 +483,7 @@
           loading: "fa fa-spinner fa-spin",
           noDataDisplay: "glyphicon glyphicon-exclamation-sign"
         }
-      },
+      }
       // fontAwesome: {
       //   common: "fa",
       //   pager: {
@@ -587,7 +587,7 @@
           warningButton: "btn-warning",
           dataField: "form-control input-sm",
           viewLabel: "col-xs-12 col-sm-4",
-          viewData: "col-xs-12 col-sm-8",
+          viewData: "col-xs-12 col-sm-8"
           // leftCorner: "ui-corner-left",
           // rightCorner: "ui-corner-right",
           // defaultCorner: "ui-corner-all"

@@ -83,7 +83,7 @@ module.exports = function(grunt) {
             }
             return moduleCode;
           },
-          footer: "}));\n"
+          footer: "\n}));\n"
         },
         src: [
           "js/grid.base.js",
@@ -101,6 +101,7 @@ module.exports = function(grunt) {
           "js/grid.subgrid.js",
           "js/grid.tbltogrid.js",
           "js/grid.treegrid.js",
+          "js/grid.toolbar.js",
           "js/jqdnr.js",
           "js/jqmodal.js",
           "js/jquery.fmatter.js"
@@ -374,6 +375,6 @@ module.exports = function(grunt) {
 
   grunt.registerTask("closureCompilerAll", closureCompilerTasks);
 
-  grunt.registerTask("all", ["clean", "concat", "jshint", "jscs", "closureCompilerAll", "cssmin", "copy"]);
-  grunt.registerTask("default", ["concat", "jshint", "jscs", "closureCompiler_js_jquery.jqgrid.src.js", "cssmin", "copy"]);
+  grunt.registerTask("all", ["clean", "concat", "jshint", "closureCompilerAll", "cssmin", "copy"]); // "jscs",
+  grunt.registerTask("default", ["concat", "jshint", "closureCompiler_js_jquery.jqgrid.src.js", "cssmin", "copy"]); // "jscs",
 };
