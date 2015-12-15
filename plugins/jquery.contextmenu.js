@@ -16,18 +16,18 @@
  *
  */
 
-(function (factory) {
-	"use strict";
-	if (typeof define === "function" && define.amd) {
-		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
-		// Node/CommonJS
-		factory(require("jquery"));
-	} else {
-		// Browser globals
-		factory(jQuery);
-	}
+(function(factory) {
+  "use strict";
+  if (typeof define === "function" && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(["jquery", "./jqdnr", "./jqmodal"], factory);
+  } else if (typeof exports === "object") {
+    // Node/CommonJS
+    factory(require("jquery"));
+  } else {
+    // Browser globals
+    factory(jQuery);
+  }
 }(function($) {
 
   var menu, shadow, content, hash, currentTarget;
@@ -55,30 +55,38 @@
     },
     eventPosX: 'pageX',
     eventPosY: 'pageY',
-    shadow : true,
+    shadow: true,
     onContextMenu: null,
     onShowMenu: null
- 	};
+  };
 
   $.fn.contextMenu = function(id, options) {
-    if (!menu) {                                      // Create singleton menu
+    if (!menu) { // Create singleton menu
       menu = $('<div id="jqContextMenu"></div>')
-               .hide()
-               .css({position:'absolute', zIndex:'500'})
-               .appendTo('body')
-               .bind('click', function(e) {
-                 e.stopPropagation();
-               });
+        .hide()
+        .css({
+          position: 'absolute',
+          zIndex: '500'
+        })
+        .appendTo('body')
+        .bind('click', function(e) {
+          e.stopPropagation();
+        });
     }
     if (!shadow) {
       shadow = $('<div></div>')
-                 .css({backgroundColor:'#000',position:'absolute',opacity:0.2,zIndex:499})
-                 .appendTo('body')
-                 .hide();
+        .css({
+          backgroundColor: '#000',
+          position: 'absolute',
+          opacity: 0.2,
+          zIndex: 499
+        })
+        .appendTo('body')
+        .hide();
     }
     hash = hash || [];
     hash.push({
-      id : id,
+      id: id,
       menuStyle: $.extend({}, defaults.menuStyle, options.menuStyle || {}),
       itemStyle: $.extend({}, defaults.itemStyle, options.itemStyle || {}),
       itemHoverStyle: $.extend({}, defaults.itemHoverStyle, options.itemHoverStyle || {}),
@@ -94,44 +102,55 @@
     $(this).bind('contextmenu', function(e) {
       // Check if onContextMenu() defined
       var bShowContext = (!!hash[index].onContextMenu) ? hash[index].onContextMenu(e) : true;
-	  currentTarget = e.target;
+      currentTarget = e.target;
       if (bShowContext) {
-		display(index, this, e );
-		return false;
-	  }
+        display(index, this, e);
+        return false;
+      }
     });
     return this;
   };
 
-  function display(index, trigger, e ) {
+  function display(index, trigger, e) {
     var cur = hash[index];
-    content = $('#'+cur.id).find('ul:first').clone(true);
+    content = $('#' + cur.id).find('ul:first').clone(true);
     content.css(cur.menuStyle).find('li').css(cur.itemStyle).hover(
       function() {
         $(this).css(cur.itemHoverStyle);
       },
-      function(){
+      function() {
         $(this).css(cur.itemStyle);
       }
-    ).find('img').css({verticalAlign:'middle',paddingRight:'2px'});
+    ).find('img').css({
+      verticalAlign: 'middle',
+      paddingRight: '2px'
+    });
 
     // Send the content to the menu
     menu.html(content);
 
     // if there's an onShowMenu, run it now -- must run after content has been added
-		// if you try to alter the content variable before the menu.html(), IE6 has issues
-		// updating the content
+    // if you try to alter the content variable before the menu.html(), IE6 has issues
+    // updating the content
     if (!!cur.onShowMenu) menu = cur.onShowMenu(e, menu);
 
     $.each(cur.bindings, function(id, func) {
-      $('#'+id, menu).bind('click', function() {
+      $('#' + id, menu).bind('click', function() {
         hide();
         func(trigger, currentTarget);
       });
     });
 
-    menu.css({'left':e[cur.eventPosX],'top':e[cur.eventPosY]}).show();
-    if (cur.shadow) shadow.css({width:menu.width(),height:menu.height(),left:e.pageX+2,top:e.pageY+2}).show();
+    menu.css({
+      'left': e[cur.eventPosX],
+      'top': e[cur.eventPosY]
+    }).show();
+    if (cur.shadow) shadow.css({
+      width: menu.width(),
+      height: menu.height(),
+      left: e.pageX + 2,
+      top: e.pageY + 2
+    }).show();
     $(document).one('click', hide);
   }
 
@@ -142,12 +161,11 @@
 
   // Apply defaults
   $.contextMenu = {
-    defaults : function(userDefaults) {
+    defaults: function(userDefaults) {
       $.each(userDefaults, function(i, val) {
         if (typeof val == 'object' && defaults[i]) {
           $.extend(defaults[i], val);
-        }
-        else defaults[i] = val;
+        } else defaults[i] = val;
       });
     }
   };

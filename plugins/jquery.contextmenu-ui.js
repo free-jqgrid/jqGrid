@@ -9,8 +9,7 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Version: r2
- * Date: 16 July 2007
+ * Version: r2* Date: 16 July 2007
  *
  * For documentation visit http://www.trendskitchens.co.nz/jquery/contextmenu/
  *
