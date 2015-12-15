@@ -577,6 +577,10 @@
                 if (opts.onstop && $.isFunction(opts.onstop)) {
                   opts.onstop.call($($t), ev, ui);
                 }
+
+                if (opts.autoResizable) {
+                  phpGrid.resizeAll();
+                }
               }
             }, opts.drag_opts || {});
           },
@@ -623,6 +627,10 @@
                 if (opts.beforedrop && $.isFunction(opts.beforedrop)) {
                   //parameters to this callback - event, element, data to be inserted, sender, reciever
                   // should return object which will be inserted into the reciever
+
+                  getdata.id = accept;
+                  getdata.parent_id = this.p.parentId;
+
                   var datatoinsert = opts.beforedrop.call(this, ev, ui, getdata, $("#" + jqID($t.p.id)), $(this));
                   if (datatoinsert !== undefined && datatoinsert !== null && typeof datatoinsert === "object") {
                     getdata = datatoinsert;
@@ -637,6 +645,8 @@
                       grid = Math.ceil(Math.random() * 1000);
                       grid = opts.autoidprefix + grid;
                     }
+                  } else {
+                    grid = accept;
                   }
                   // NULL is interpreted as undefined while null as object
                   $("#" + jqID(this.id)).jqGrid("addRowData", grid, getdata, opts.droppos);
@@ -653,8 +663,7 @@
           beforedrop: null,
           ondrop: null,
           drop_opts: {
-            //activeClass: "ui-state-active",
-            //hoverClass: "ui-state-hover"
+            hoverClass: "ui-droppable-hover"
           },
           drag_opts: {
             revert: "invalid",
@@ -664,10 +673,11 @@
             zIndex: 5000
           },
           dragcopy: false,
-          dropbyname: false,
-          droppos: "first",
-          autoid: true,
-          autoidprefix: "dnd_"
+          dropbyname: true,
+          droppos: "last",
+          autoid: false,
+          autoidprefix: "dnd_",
+          autoResizable: true
         }, opts || {});
 
         if (!opts.connectWith) {

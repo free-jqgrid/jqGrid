@@ -43,7 +43,8 @@
   }
 }(function($) {
   "use strict";
-  var jgrid = $.jgrid;
+  var jgrid = $.jgrid,
+    getGridRes = jgrid.getMethod("getGridRes");
   // begin module grid.filter
   $.fn.jqFilter = function(arg) {
     if (typeof arg === "string") {
@@ -105,11 +106,10 @@
           return jgrid.getRes(jgrid.guiStyles[getGrid().p.guiStyle], path);
         },
         errorClass = getGuiStyles("states.error"),
-        dialogContentClass = getGuiStyles("dialog.content");
+        dataField = getGuiStyles("filter.dataField");
 
       // translating the options
       p.initFilter = $.extend(true, {}, p.filter);
-
       // set default values for the columns if they are not set
       if (!len) {
         return;
@@ -118,7 +118,7 @@
         cl = p.columns[iColumn];
         if (cl.stype) {
           // grid compatibility
-          cl.inputtype = cl.stype;
+          cl.inputtype = cl.stype === "select2" ? "select" : cl.stype;
         } else if (!cl.inputtype) {
           cl.inputtype = "text";
         }
@@ -147,9 +147,10 @@
 
       }
       if (p.showQuery) {
-        $(this).append("<table class='queryresult " + dialogContentClass +
-          "' style='display:block;max-width:440px;border:0px none;' dir='" + p.direction + "'><tbody><tr><td class='query'></td></tr></tbody></table>");
+        $(this).append("<div class='queryresult' dir='" + p.direction + "'><div class='query'></div></div>");
       }
+      $(this).append("<input type='hidden' class='inputQuery'></input>");
+      $(this).append("<div class='error' style='display:none;'><div class='" + errorClass + "' ></div></div>");
       /*
        *Perform checking.
        *
@@ -171,7 +172,7 @@
       };
       /* moving to common
       randId = function() {
-      	return Math.floor(Math.random()*10000).toString();
+         return Math.floor(Math.random()*10000).toString();
       };
       */
 
@@ -202,27 +203,24 @@
         var that = this,
           i;
         // this table will hold all the group (tables) and rules (rows)
-        var table = $("<table class='group " + dialogContentClass + "' style='border:0px none;'><tbody></tbody></table>"),
-          align = "left";
+        var table = $("<table class='group ui-search-table'><tbody></tbody></table>"),
+          align = "left",
+          th = $("<th></th>");
         // create error message row
         if (p.direction === "rtl") {
           align = "right";
           table.attr("dir", "rtl");
         }
-        if (parentgroup === null) {
-          table.append("<tr class='error' style='display:none;'><th colspan='5' class='" + errorClass + "' align='" + align + "'></th></tr>");
-        }
-
-        var tr = $("<tr></tr>");
-        table.append(tr);
-        // this header will hold the group operator type and group action buttons for
-        // creating subgroup "+ {}", creating rule "+" or deleting the group "-"
-        var th = $("<th colspan='5' align='" + align + "'></th>");
-        tr.append(th);
 
         if (p.ruleButtons === true) {
+          var tr = $("<tr></tr>");
+          table.append(tr);
+          // this header will hold the group operator type and group action buttons for
+          // creating subgroup "+ {}", creating rule "+" or deleting the group "-"
+          th = $("<th colspan='5' align='" + align + "' class='form-inline'></th>");
+          tr.append(th);
           // dropdown for: choosing group operator type
-          var groupOpSelect = $("<select class='opsel'></select>");
+          var groupOpSelect = $("<select class='opsel " + dataField + "'></select>");
           th.append(groupOpSelect);
           // populate dropdown with all posible group operators: or, and
           var str = "",
@@ -239,9 +237,9 @@
             });
         }
         // button for adding a new subgroup
-        var inputAddSubgroup = "<span></span>";
+        var inputAddSubgroup = "";
         if (p.groupButton) {
-          inputAddSubgroup = $("<input type='button' value='+ {}' title='Add subgroup' class='add-group'/>");
+          inputAddSubgroup = $("<button title='Add subgroup' class='add-group btn btn-xs btn-info'><span class='glyphicon glyphicon-object-align-left'></span></button>");
           inputAddSubgroup.bind("click", function() {
             if (group.groups === undefined) {
               group.groups = [];
@@ -258,11 +256,12 @@
             that.onchange(); // signals that the filter has changed
             return false;
           });
+          th.append('&nbsp;').append(inputAddSubgroup);
         }
-        th.append(inputAddSubgroup);
+
         if (p.ruleButtons === true) {
           // button for adding a new rule
-          var inputAddRule = $("<input type='button' value='+' title='Add rule' class='add-rule ui-add'/>"),
+          var inputAddRule = $("<button type='button' title='Add rule' class='add-rule ui-add btn btn-xs btn-primary'><span class='glyphicon glyphicon-plus'></span></button>"),
             cm;
           inputAddRule.bind("click", function() {
             var searchable, hidden, ignoreHiding;
@@ -303,13 +302,13 @@
             // this will not trigger onchange event
             return false;
           });
-          th.append(inputAddRule);
+          th.append('&nbsp;').append(inputAddRule);
         }
 
         // button for delete the group
         if (parentgroup !== null) { // ignore the first group
-          var inputDeleteGroup = $("<input type='button' value='-' title='Delete group' class='delete-group'/>");
-          th.append(inputDeleteGroup);
+          var inputDeleteGroup = $("<button type='button' title='Delete group' class='delete-group btn btn-xs btn-danger'><span class='glyphicon glyphicon-minus'></span></button>");
+          th.append('&nbsp;').append(inputDeleteGroup);
           inputDeleteGroup.bind("click", function() {
             // remove group from parent
             for (i = 0; i < parentgroup.groups.length; i++) {
@@ -332,10 +331,8 @@
           for (i = 0; i < group.groups.length; i++) {
             trHolderForSubgroup = $("<tr></tr>");
             table.append(trHolderForSubgroup);
-
             tdFirstHolderForSubgroup = $("<td class='first'></td>");
             trHolderForSubgroup.append(tdFirstHolderForSubgroup);
-
             tdMainHolderForSubgroup = $("<td colspan='4'></td>");
             tdMainHolderForSubgroup.append(this.createTableForGroup(group.groups[i], group));
             trHolderForSubgroup.append(tdMainHolderForSubgroup);
@@ -368,20 +365,16 @@
           tr = $("<tr></tr>"),
           i, op, cm, str = "",
           selected;
-
         tr.append("<td class='first'></td>");
-
         // create field container
         var ruleFieldTd = $("<td class='columns'></td>");
         tr.append(ruleFieldTd);
-
         // dropdown for: choosing field
-        var ruleFieldSelect = $("<select></select>"),
+        var ruleFieldSelect = $("<select class='" + dataField + "'></select>"),
           ina, aoprs = [];
         ruleFieldTd.append(ruleFieldSelect);
         ruleFieldSelect.bind("change", function() {
           rule.field = $(ruleFieldSelect).val();
-
           var trpar = $(this).parents("tr:first"),
             columns, k; // define LOCAL variables
           for (k = 0; k < that.p.columns.length; k++) {
@@ -393,7 +386,9 @@
           if (!columns) {
             return;
           }
-          var searchoptions = $.extend({}, columns.searchoptions || {}, {
+          var searchoptions = $.extend({
+            emptyOptionText: getGridRes.call($($t), "search.emptyOptionText")
+          }, columns.searchoptions || {}, {
             id: jgrid.randId(),
             name: columns.name,
             mode: "search"
@@ -405,7 +400,7 @@
           }
           var elm = jgrid.createEl.call($t, columns.inputtype, searchoptions,
             "", true, that.p.ajaxSelectOptions || {}, true);
-          $(elm).addClass("input-elm");
+          $(elm).addClass("input-elm " + dataField);
           //that.createElement(rule, "");
 
           if (searchoptions.sopt) {
@@ -466,7 +461,6 @@
             that.onchange(); // signals that the filter has changed
           }, 0);
         });
-
         // populate drop down with user provided column definitions
         var j = 0,
           searchable, hidden, ignoreHiding;
@@ -485,8 +479,6 @@
           }
         }
         ruleFieldSelect.append(str);
-
-
         // create operator container
         var ruleOperatorTd = $("<td class='operators'></td>");
         tr.append(ruleOperatorTd);
@@ -499,7 +491,9 @@
           }
         }
         var ruleDataInput = jgrid.createEl.call($t, cm.inputtype,
-          $.extend({}, cm.searchoptions || {}, {
+          $.extend({
+            emptyOptionText: getGridRes.call($($t), "search.emptyOptionText")
+          }, cm.searchoptions || {}, {
             id: jgrid.randId(),
             name: cm.name
           }),
@@ -509,7 +503,7 @@
           $(ruleDataInput).attr("disabled", "true");
         } //retain the state of disabled text fields in case of null ops
         // dropdown for: choosing operator
-        var ruleOperatorSelect = $("<select class='selectopts'></select>");
+        var ruleOperatorSelect = $("<select class='selectopts " + dataField + "'></select>");
         ruleOperatorTd.append(ruleOperatorSelect);
         ruleOperatorSelect.bind("change", function() {
           rule.op = $(ruleOperatorSelect).val();
@@ -532,7 +526,6 @@
 
           that.onchange(); // signals that the filter has changed
         });
-
         // populate drop down with all available operators
         if (cm.searchoptions.sopt) {
           op = cm.searchoptions.sopt;
@@ -569,26 +562,23 @@
         // create data container
         var ruleDataTd = $("<td class='data'></td>");
         tr.append(ruleDataTd);
-
         // textbox for: data
         // is created previously
         //ruleDataInput.setAttribute("type", "text");
         ruleDataTd.append(ruleDataInput);
         jgrid.bindEv.call($t, ruleDataInput, cm.searchoptions);
-        $(ruleDataInput).addClass("input-elm")
+        $(ruleDataInput).addClass("input-elm " + dataField)
           .bind("change", function() {
             rule.data = cm.inputtype === "custom" ? cm.searchoptions.custom_value.call($t, $(this).children(".customelement:first"), "get") : $(this).val();
             that.onchange(); // signals that the filter has changed
           });
-
         // create action container
         var ruleDeleteTd = $("<td></td>");
         tr.append(ruleDeleteTd);
-
         // create button for: delete rule
         if (p.ruleButtons === true) {
-          var ruleDeleteInput = $("<input type='button' value='-' title='Delete rule' class='delete-rule ui-del'/>");
-          ruleDeleteTd.append(ruleDeleteInput);
+          var ruleDeleteInput = $("<button type='button' title='Delete rule' class='delete-rule ui-del btn btn-xs btn-danger'><span class='glyphicon glyphicon-minus'></span></button>");
+          ruleDeleteTd.append('&nbsp;').append(ruleDeleteInput);
           //$(ruleDeleteInput).html("").height(20).width(30).button({icons: {  primary: "ui-icon-minus", text:false}});
           ruleDeleteInput.bind("click", function() {
             // remove rule from group
@@ -607,7 +597,6 @@
         }
         return tr;
       };
-
       this.getStringForGroup = function(group) {
         var s = "(",
           index;
@@ -627,10 +616,12 @@
         if (group.rules !== undefined) {
           try {
             for (index = 0; index < group.rules.length; index++) {
-              if (s.length > 1) {
-                s += " " + group.groupOp + " ";
+              if (group.rules[index].data) {
+                if (s.length > 1) {
+                  s += " " + group.groupOp + " ";
+                }
+                s += this.getStringForRule(group.rules[index]);
               }
-              s += this.getStringForRule(group.rules[index]);
             }
           } catch (e) {
             alert(e);
@@ -638,7 +629,6 @@
         }
 
         s += ")";
-
         if (s === "()") {
           return ""; // ignore groups that don't have rules
         }
@@ -708,12 +698,12 @@
         this.onchange();
       };
       this.hideError = function() {
-        $("th." + errorClass, this).html("");
-        $("tr.error", this).hide();
+        $("div.alert", this).html("");
+        $("div.error", this).hide();
       };
       this.showError = function() {
-        $("th." + errorClass, this).html(p.errmsg);
-        $("tr.error", this).show();
+        $("div.alert", this).html("<span class='glyphicon glyphicon-exclamation-sign'></span>" + p.errmsg);
+        $("div.error", this).show();
       };
       this.toUserFriendlyString = function() {
         return this.getStringForGroup(p.filter);
@@ -741,7 +731,6 @@
         function getStringForGroup(group) {
           var s = "(",
             index;
-
           if (group.groups !== undefined) {
             for (index = 0; index < group.groups.length; index++) {
               if (s.length > 1) {
@@ -769,7 +758,6 @@
           }
 
           s += ")";
-
           if (s === "()") {
             return ""; // ignore groups that don't have rules
           }
@@ -778,10 +766,8 @@
 
         return getStringForGroup(p.filter);
       };
-
       // Here we init the filter
       this.reDraw();
-
       if (p.showQuery) {
         this.onchange();
       }
@@ -809,7 +795,6 @@
         s = this.p.filter;
       });
       return s;
-
     },
     getParameter: function(param) {
       if (param !== undefined) {

@@ -98,71 +98,15 @@
           sopt: ["eq", "ne", "lt", "le", "gt", "ge"]
         }
       },
-      booleanCheckbox: {
-        align: "center",
-        formatter: "checkbox",
-        edittype: "checkbox",
-        editoptions: {
-          value: "true:false",
-          defaultValue: "false"
-        },
-        convertOnSave: function(options) {
-          var nData = options.newValue,
-            cm = options.cm,
-            lnData = String(nData).toLowerCase(),
-            cbv = cm.editoptions != null && typeof cm.editoptions.value === "string" ?
-            cm.editoptions.value.split(":") : ["yes", "no"];
-
-          if ($.inArray(lnData, ["1", "true", cbv[0].toLowerCase()]) >= 0) {
-            nData = true;
-          } else if ($.inArray(lnData, ["0", "false", cbv[1].toLowerCase()]) >= 0) {
-            nData = false;
-          }
-          return nData;
-        },
-        stype: "select",
-        searchoptions: {
-          sopt: ["eq", "ne"],
-          value: ":Any;true:Yes;false:No"
-        }
-      },
-      booleanCheckboxFa: {
-        align: "center",
-        formatter: "checkboxFontAwesome4",
-        edittype: "checkbox",
-        editoptions: {
-          value: "true:false",
-          defaultValue: "false"
-        },
-        convertOnSave: function(options) {
-          var nData = options.newValue,
-            cm = options.cm,
-            lnData = String(nData).toLowerCase(),
-            cbv = cm.editoptions != null && typeof cm.editoptions.value === "string" ?
-            cm.editoptions.value.split(":") : ["yes", "no"];
-
-          if ($.inArray(lnData, ["1", "true", cbv[0].toLowerCase()]) >= 0) {
-            nData = true;
-          } else if ($.inArray(lnData, ["0", "false", cbv[1].toLowerCase()]) >= 0) {
-            nData = false;
-          }
-          return nData;
-        },
-        stype: "select",
-        searchoptions: {
-          sopt: ["eq", "ne"],
-          value: ":Any;true:Yes;false:No"
-        }
-      },
       // TODO: add cmTemplate for currency and date
       actions: function() {
         return {
           formatter: "actions",
-          width: (this.p != null && this.p.fontAwesomeIcons ? 33 : 37) + (jgrid.cellWidth() ? 5 : 0),
+          width: (this.p !== null ? 120 : 37) + (jgrid.cellWidth() ? 5 : 0),
           align: "center",
           label: "",
           autoResizable: false,
-          frozen: true,
+          frozen: false,
           fixed: true,
           hidedlg: true,
           resizable: false,
@@ -171,6 +115,38 @@
           editable: false,
           viewable: false
         };
+      },
+      button: {
+        formatter: "button",
+        width: 42,
+        align: "center",
+        label: "",
+        autoResizable: false,
+        frozen: false,
+        fixed: true,
+        hidedlg: true,
+        resizable: false,
+        sortable: false,
+        search: false,
+        editable: false,
+        viewable: false
+
+      },
+      moveNode: {
+        formatter: "moveNode",
+        width: 120,
+        align: "center",
+        label: "",
+        autoResizable: false,
+        frozen: false,
+        fixed: true,
+        hidedlg: true,
+        resizable: false,
+        sortable: false,
+        search: false,
+        editable: false,
+        viewable: false
+
       }
     }
   });
@@ -296,9 +272,8 @@
       cval = defaultFormat(cval, op);
     }
     cval = String(cval);
-    cval = String(cval).toLowerCase();
-    var bchk = cval.search(/(false|f|0|no|n|off|undefined)/i) < 0 ? " checked='checked' " : "";
-    return "<input type=\"checkbox\" " + bchk + " value=\"" + cval + "\" data-offval=\"no\" " + ds + "/>";
+    var bchk = cval.search(/(false|f|F|0|no|n|off|undefined)/i) < 0 ? " checked='checked' " : "";
+    return "<label class=\"checkbox\" style=\"padding:0px;width:20px;\"><input type=\"checkbox\" " + bchk + " value=\"" + cval + "\" data-offval=\"F\" " + ds + "/><i></i></label>";
   };
   $FnFmatter.checkbox.getCellBuilder = function(opts) {
     var colModel = opts.colModel,
@@ -307,45 +282,15 @@
     if (colModel != null) {
       op = $.extend({}, op, colModel.formatoptions || {});
     }
-    tagEnd = "\" data-offval=\"no\" " + (op.disabled === true ? "disabled=\"disabled\"" : "") + "/>";
+    tagEnd = "\" data-offval=\"F\" " + (op.disabled === true ? "disabled=\"disabled\"" : "") + "/>";
     return function(cval) {
       if (fmatter.isEmpty(cval) || cval === undefined) {
         cval = defaultFormat(cval, op);
       }
-      cval = String(cval).toLowerCase();
-      return "<input type=\"checkbox\" " +
-        (cval.search(/(false|f|0|no|n|off|undefined)/i) < 0 ? " checked='checked' " : "") +
-        " value=\"" + cval + tagEnd;
+      return "<label class=\"checkbox\" style=\"padding:0px;width:20px;\"><input type=\"checkbox\"" +
+        (cval.search(/(false|f|F|0|no|n|off|undefined)/i) < 0 ? " checked='checked' " : "") +
+        " value=\"" + cval + tagEnd + "<i></i></label>";
     };
-  };
-  $FnFmatter.checkboxFontAwesome4 = function(cellValue, options) {
-    var colModel = options.colModel,
-      title = colModel.title !== false ? ' title="' + (options.colName || colModel.label || colModel.name) + '"' : "",
-      strCellValue = String(cellValue).toLowerCase(),
-      editoptions = colModel.editoptions || {},
-      editYes = typeof editoptions.value === "string" ? editoptions.value.split(":")[0] : "yes";
-    return (cellValue === 1 || strCellValue === "1" || strCellValue === "x" || cellValue === true || strCellValue === "true" || strCellValue === "yes" || strCellValue === editYes) ?
-      '<i class="fa fa-check-square-o fa-lg"' + title + "></i>" :
-      '<i class="fa fa-square-o fa-lg"' + title + "></i>";
-  };
-  $FnFmatter.checkboxFontAwesome4.getCellBuilder = function(options) {
-    var colModel = options.colModel,
-      title = colModel.title !== false ? ' title="' + (options.colName || colModel.label || colModel.name) + '"' : "",
-      editoptions = colModel.editoptions || {},
-      editYes = typeof editoptions.value === "string" ? editoptions.value.split(":")[0] : "yes",
-      checked = '<i class="fa fa-check-square-o fa-lg"' + title + "></i>",
-      unchecked = '<i class="fa fa-square-o fa-lg"' + title + "></i>";
-    return function(cellValue) {
-      var strCellValue = String(cellValue).toLowerCase();
-      return (cellValue === true || cellValue === 1 || strCellValue === "1" || strCellValue === "x" || strCellValue === "true" || strCellValue === "yes" || strCellValue === editYes) ?
-        checked : unchecked;
-    };
-  };
-  $FnFmatter.checkboxFontAwesome4.unformat = function(cellValue, options, elem) {
-    var colModel = options.colModel,
-      editoptions = colModel.editoptions || {},
-      cbv = typeof editoptions.value === "string" ? editoptions.value.split(":") : ["Yes", "No"];
-    return $(">i", elem).hasClass("fa-check-square-o") ? cbv[0] : cbv[1];
   };
   $FnFmatter.link = function(cellval, opts) {
     var colModel = opts.colModel,
@@ -600,7 +545,7 @@
     var ret = [],
       colModel = opts.colModel,
       defaultValue,
-      op = $.extend({}, colModel.editoptions || {}, colModel.formatoptions || {}),
+      op = $.extend({}, colModel.editoptions || {}, colModel.searchoptions || {}, colModel.formatoptions || {}),
       oSelect = op.value,
       sep = op.separator || ":",
       delim = op.delimiter || ";";
@@ -659,7 +604,7 @@
     // jqGrid specific
     var colModel = opts.colModel,
       $fnDefaultFormat = $FnFmatter.defaultFormat,
-      op = $.extend({}, colModel.editoptions || {}, colModel.formatoptions || {}),
+      op = $.extend({}, colModel.editoptions || {}, colModel.searchoptions || {}, colModel.formatoptions || {}),
       oSelect = op.value,
       sep = op.separator || ":",
       delim = op.delimiter || ";",
@@ -725,17 +670,19 @@
       cm = p.colModel[jgrid.getCellIndex(this)],
       op = $.extend(true, {
         extraparam: {}
-      }, jgrid.actionsNav || {}, p.actionsNavOptions || {}, cm.formatoptions || {});
+      }, jgrid.actionsNav || {}, p.actionsNavOptions || {}, cm.formatoptions || {}),
+      tabid, strCaption;
 
     if (p.editOptions !== undefined) {
-      op.editOptions = $.extend(true, op.editOptions || {}, p.editOptions);
+      op.editOptions = $.extend(p.editOptions, op.editOptions || {});
     }
     if (p.delOptions !== undefined) {
-      op.delOptions = p.delOptions;
+      op.delOptions = $.extend(p.delOptions, op.delOptions || {});
     }
     if ($tr.hasClass("jqgrid-new-row")) {
       op.extraparam[p.prmNames.oper] = p.prmNames.addoper;
     }
+
     var actop = {
       keys: op.keys,
       oneditfunc: op.onEdit,
@@ -748,11 +695,35 @@
       restoreAfterError: op.restoreAfterError,
       mtype: op.mtype
     };
+
     if ((!p.multiselect && rid !== p.selrow) || (p.multiselect && $.inArray(rid, p.selarrrow) < 0)) {
       $grid.jqGrid("setSelection", rid, true, e);
     } else {
       jgrid.fullBoolFeedback.call($t, "onSelectRow", "jqGridSelectRow", rid, true, e);
     }
+
+    if (cm.formatter === "button") {
+      if (act === "edit") {
+        act = (cm.formatoptions.modal === true ? 'formedit' : 'simpleform');
+      }
+
+      var tpv = p.tabsView,
+        tmpArray = [],
+        tmpText = [];
+      strCaption = cm.formatoptions.caption;
+      tabid = "tab_" + cm.name + p.tabId + rid;
+      if (act !== "delete" && cm.formatoptions.modal === false && tpv !== undefined) {
+        $.each(tpv.labelField, function(key, value) {
+          tmpArray.push($($t.rows[p.rowIndexes[rid]].cells[p.iColByName[value]]).text());
+          tmpText.push("{" + key + "}");
+        });
+
+        tmpArray.unshift(tpv.labelText !== "" ? tpv.labelText : tmpText.join(' '));
+        strCaption += " [" + jgrid.template.apply(null, tmpArray) + "]";
+      }
+
+    }
+
     switch (act) {
       case "edit":
         $grid.jqGrid("editRow", rid, actop);
@@ -764,19 +735,37 @@
         $grid.jqGrid("restoreRow", rid, op.afterRestore);
         break;
       case "del":
+      case "delete":
         op.delOptions = op.delOptions || {};
-        if (op.delOptions.top === undefined) {
-          op.delOptions.top = $tr.offset().top + $tr.outerHeight() - $grid.closest(".ui-jqgrid").offset().top;
-        }
         $grid.jqGrid("delGridRow", rid, op.delOptions);
         break;
       case "formedit":
         op.editOptions = op.editOptions || {};
-        if (op.editOptions.top === undefined) {
-          op.editOptions.top = $tr.offset().top + $tr.outerHeight() - $grid.closest(".ui-jqgrid").offset().top;
-          op.editOptions.recreateForm = true;
-        }
         $grid.jqGrid("editGridRow", rid, op.editOptions);
+        break;
+      case "simpleform":
+        if (op.idField) {
+          rid = $grid.getRowData(rid)[op.idField] || rid;
+        }
+
+        actop.url += "/" + rid + "/" + (p.parentId ? p.parentId : 'null') + "/" + p.globalId + (p.tabId !== "" ? "/" + p.tabId : '');
+        app.addTab(p.tabId, tabid, actop.url, strCaption);
+        break;
+      case "newtab":
+        if (op.idField) {
+          rid = $grid.getRowData(rid)[op.idField] || rid;
+        }
+
+        actop.url += "/" + rid + "/" + p.globalId + (p.tabId !== "" ? "/" + p.tabId : '');
+        app.addTab(p.tabId, tabid, actop.url, strCaption);
+        break;
+      case "moveup":
+        actop.event = 'up';
+        $grid.jqGrid("moveTreeNode", rid, actop);
+        break;
+      case "movedown":
+        actop.event = 'down';
+        $grid.jqGrid("moveTreeNode", rid, actop);
         break;
       default:
         if (op.custom != null && op.custom.length > 0) {
@@ -795,10 +784,53 @@
           }
         }
     }
+
     if (e.stopPropagation) {
       e.stopPropagation();
     }
     return false; // prevent other processing of the click on the row
+  };
+  $FnFmatter.button = function(cellval, opts, rwd, act) {
+    var op = $.extend({
+        commonIconClass: "glyphicon",
+        icon: "",
+        color: "",
+        url: "",
+        action: ""
+      }, opts.colModel.formatoptions),
+      mergeCssClasses = jgrid.mergeCssClasses;
+
+    if (!op.reformatAfterEdit && act === "edit") {
+      return defaultFormat(cellval, op);
+    } else {
+      return "<button title='" + opts.colModel.label + "' class='ui-btn " + (op.color !== "" ? "ui-btn-" + op.color : "") + "' onclick=\"return $.fn.fmatter.rowactions.call(this,event,'" + op.action + "');\"><span class='" + mergeCssClasses(op.commonIconClass, op.icon) + "'></span></button>";
+    }
+  };
+  $FnFmatter.moveNode = function(cellval, opts) {
+    var op = $.extend({
+      color: ""
+    }, opts.colModel.formatoptions);
+    return "<div class=\"btn-group\" role=\"group\"><button title='Up' class='btn ui-btn " + (op.color !== "" ? "ui-btn-" + op.color : "") + " move-up' onclick=\"return $.fn.fmatter.rowactions.call(this,event,'moveup');\"><span class=\"glyphicon glyphicon-chevron-up\"></span></button>" +
+      "<button title='Down' class='btn ui-btn " + (op.color !== "" ? "ui-btn-" + op.color : "") + " move-down' onclick=\"return $.fn.fmatter.rowactions.call(this,event,'movedown');\"><span class=\"glyphicon glyphicon-chevron-down\"></span></button></div>";
+  };
+  $FnFmatter.showTrueFalse = function(cellval) { /* opts */
+    return (cellval === 'T' ? '<span class="glyphicon glyphicon-ok icon-true"></span>' : '<span class="glyphicon glyphicon-remove icon-false"></span>');
+  };
+  $FnFmatter.image = function(cellval, opts) {
+    var op = $.extend({}, op, opts.colModel.editoptions, opts.colModel.formatoptions);
+
+    var attr = '';
+    attr += op.height ? 'height="' + op.height + '"' : '';
+    attr += op.width ? 'width="' + op.width + '"' : '';
+
+    if (cellval && op.path) {
+      if ((op.path).slice(-1) !== '/') {
+        op.path += '/';
+      }
+      return '<img src="' + op.path + cellval + '" ' + attr + '/>';
+    } else {
+      return '';
+    }
   };
   $FnFmatter.actions = function(cellval, opts, rwd, act) {
     var rowid = opts.rowId,
@@ -811,14 +843,7 @@
       op = $.extend({
           editbutton: true,
           delbutton: true,
-          editformbutton: false,
-          commonIconClass: "ui-icon",
-          editicon: "ui-icon-pencil",
-          delicon: "ui-icon-trash",
-          saveicon: "ui-icon-disk",
-          cancelicon: "ui-icon-cancel",
-          savetitle: edit.bSubmit || "",
-          canceltitle: edit.bCancel || ""
+          editformbutton: false
         },
         getGridRes.call($self, "nav") || {},
         jgrid.nav || {},
@@ -828,43 +853,48 @@
         p.actionsNavOptions || {},
         opts.colModel.formatoptions || {}),
       mergeCssClasses = jgrid.mergeCssClasses,
-      cssIconClass = function(name) {
-        return mergeCssClasses(op.commonIconClass, op[name + "icon"]);
+      cssIconClass = function(commonClass, icon) {
+        return mergeCssClasses(commonClass || '', icon);
       },
-      hoverClass = mergeCssClasses(jgrid.getRes(jgrid.guiStyles[p.guiStyle], "states.hover")),
-      hoverAttributes = "onmouseover=\"jQuery(this).addClass('" + hoverClass +
-      "');\" onmouseout=\"jQuery(this).removeClass('" + hoverClass + "');\"",
       buttonInfos = [{
         action: "edit",
         actionName: "formedit",
         display: op.editformbutton
       }, {
         action: "edit",
-        display: !op.editformbutton && op.editbutton
+        display: !op.editformbutton && op.editbutton,
+        commonIconClass: op.commonIconClass,
+        caption: edit.bEdit + "&nbsp;"
       }, {
         action: "del",
         idPrefix: "Delete",
-        display: op.delbutton
+        display: op.delbutton,
+        commonIconClass: op.commonIconClass,
+        color: 'red'
       }, {
         action: "save",
         display: op.editformbutton || op.editbutton,
-        hidden: true
+        hidden: true,
+        commonIconClass: op.commonIconClass,
+        caption: edit.bSubmit + "&nbsp;",
+        color: 'green'
       }, {
         action: "cancel",
         display: op.editformbutton || op.editbutton,
-        hidden: true
-      }],
+        hidden: true,
+        commonIconClass: op.commonIconClass,
+        color: 'orange'
+      } /* color: 'ui-btn-red'*/ ],
       actionButton = function(options) {
         var action = options.action,
           actionName = options.actionName || action,
           idPrefix = options.idPrefix !== undefined ? options.idPrefix : (action.charAt(0).toUpperCase() + action.substring(1));
-        return "<div title='" + op[action + "title"] +
+        return "<button title='" + (op[action + "title"] || options.title) +
           (options.hidden ? "' style='display:none;" : "") +
-          "' class='ui-pg-div ui-inline-" + action + "' " +
+          "' class='ui-pg-div ui-inline-" + action + " ui-btn " + (options.color !== undefined ? "ui-btn-" + options.color : "") + "' " +
           (idPrefix !== null ? "id='j" + idPrefix + "Button_" + rowid : "") +
-          "' onclick=\"return jQuery.fn.fmatter.rowactions.call(this,event,'" + actionName + "');\" " +
-          (options.noHovering ? "" : hoverAttributes) + "><span class='" +
-          cssIconClass(action) + "'></span></div>";
+          "' onclick=\"return $.fn.fmatter.rowactions.call(this,event,'" + actionName + "');\" ><span class='" + cssIconClass(options.commonIconClass, op[action + "icon"] || options.icon) +
+          "'></span>" + (options.caption ? "<b>" + options.caption + "</b> " : "") + "</button>";
       },
       n = op.custom != null ? op.custom.length - 1 : -1;
 
@@ -996,13 +1026,26 @@
           break;
         case "checkbox":
           var cbv = (colModel.editoptions != null && typeof colModel.editoptions.value === "string") ?
-            colModel.editoptions.value.split(":") : ["Yes", "No"];
+            colModel.editoptions.value.split(":") : ["T", "F"];
           ret = $("input", cellval).is(":checked") ? cbv[0] : cbv[1];
           break;
         case "select":
           ret = $.unformat.select(cellval, options, pos, cnt);
           break;
+        case 'showTrueFalse':
+          var cell = $(cellval).html();
+          ret = cell.search("glyphicon-ok") > 0 ? 'T' : 'F';
+          break;
+        case 'image':
+          op = $.extend({}, options.colModel.editoptions, op);
+          if ((op.path).slice(-1) !== '/') {
+            op.path += '/';
+          }
+          ret = $('img', cellval).attr('src').replace(op.path, "");
+          break;
+        case "button":
         case "actions":
+        case "moveNode":
           return "";
         default:
           ret = $(cellval).text();

@@ -61,6 +61,9 @@
       var $t = this,
         frozenRows = $t.grid.fbRows;
       return $((frozenRows != null && frozenRows[0].cells.length > iCol ? frozenRows[tr.rowIndex] : tr).cells[iCol]);
+    },
+    getGuiStyles = function(path, jqClasses) {
+      return jgrid.mergeCssClasses(jgrid.getRes(jgrid.guiStyles[this.p.guiStyle], path), jqClasses || "");
     };
   jgrid.extend({
     editCell: function(iRow, iCol, ed) {
@@ -178,25 +181,41 @@
           if (editingColumnWithTreeGridIcon) {
             $dataFiled = cc.children("span.cell-wrapperleaf,span.cell-wrapper");
           }
+
+          if ($.inArray(edittype, ["text", "textarea", "password", "select", "datepicker", "datetimepicker"]) > -1) {
+            $(elc).addClass(getGuiStyles.call($t, "dialog.dataField"));
+          }
+
           $dataFiled.html("").append(elc).attr("tabindex", "0");
           if (editingColumnWithTreeGridIcon) { // && elc.style.width === "100%"
-            $(elc).width(cc.width() - cc.children("div.tree-wrap").outerWidth());
+            $(elc).width(cc.width() - cc.children("span.tree-wrap").outerWidth());
           }
           jgrid.bindEv.call($t, elc, opt);
           setTimeout(function() {
             $(elc).focus();
           }, 1);
+          switch (cm.edittype) {
+            case "file":
+              var elem = document.createElement("input");
+              elem.type = "hidden";
+              elem.id = iRow + "_" + nm;
+              elem.name = nm;
+              elem.value = tmp;
+              $($dataFiled).append(elem);
+              var html = '<label class="input-file" for="' + opt.id + '"><div class="input-group input-group-sm"><input type="text" class="form-control input-sm" style="width: 100%; box-sizing: border-box;" readonly>';
+              html += '<span class="input-group-btn"><div class="btn btn-default">Browse</div></span></div></label>';
+              $($dataFiled).prepend(html);
+              setTimeout(function() {
+                $("#" + opt.id, $dataFiled).prependTo($(".input-group-btn > .btn", $dataFiled));
+                $("#" + opt.id, $dataFiled).attr('onchange', 'this.closest(\'.input-group\').getElementsByTagName(\'input\')[0].value = this.value;');
+                $($dataFiled).find(".form-control").focus();
+              }, 1);
+              break;
+          }
+
           $("input, select, textarea", cc).bind("keydown", function(e) {
             if (e.keyCode === 27) {
-              if ($("input.hasDatepicker", cc).length > 0) {
-                if ($(".ui-datepicker").is(":hidden")) {
-                  $self.jqGrid("restoreCell", iRow, iCol);
-                } else {
-                  $("input.hasDatepicker", cc).datepicker("hide");
-                }
-              } else {
-                $self.jqGrid("restoreCell", iRow, iCol);
-              }
+              $self.jqGrid("restoreCell", iRow, iCol);
             } //ESC
             if (e.keyCode === 13 && !e.shiftKey) {
               $self.jqGrid("saveCell", iRow, iCol);
@@ -239,7 +258,6 @@
           p = $t.p,
           infoDialog = jgrid.info_dialog,
           jqID = jgrid.jqID;
-
         if (!$t.grid || p.cellEdit !== true) {
           return;
         }
@@ -256,10 +274,20 @@
             cm = p.colModel[iCol],
             nm = cm.name,
             v, vv,
-            cc = getTdByColumnIndex.call($t, tr, iCol);
+            cc = getTdByColumnIndex.call($t, tr, iCol),
+            postdata = {};
           v = jgrid.getEditedValue.call($t, cc, cm, !cm.formatter);
+          if (cm.edittype === "file") {
+            if (v[2] !== undefined) {
+              postdata["File" + nm] = v[2];
+              v = v[1];
+            } else {
+              v = v[0];
+            }
+          }
+
           // The common approach is if nothing changed do not do anything
-          if (v !== savedRow[fr].v) {
+          if (v !== (savedRow[fr].v).trim()) {
             vv = $self.triggerHandler("jqGridBeforeSaveCell", [rowid, nm, v, iRow, iCol]);
             if (vv !== undefined) {
               v = vv;
@@ -280,9 +308,6 @@
                   addpost = {};
                 }
               }
-              if ($("input.hasDatepicker", cc).length > 0) {
-                $("input.hasDatepicker", cc).datepicker("hide");
-              }
               if (cm.formatter === "date" && formatoptions.sendFormatted !== true) {
                 // TODO: call all other predefined formatters!!! Not only formatter: "date" have the problem.
                 // Floating point separator for example
@@ -290,7 +315,6 @@
               }
               if (p.cellsubmit === "remote") {
                 if (p.cellurl) {
-                  var postdata = {};
                   postdata[nm] = v;
                   var opers = p.prmNames,
                     idname = opers.id,
@@ -312,31 +336,49 @@
                     htmlcontent: jgrid.defaults.savetext || "Saving..."
                   });
                   hDiv.loading = true;
+                  var formData = new FormData();
+                  $.each(jgrid.serializeFeedback.call($t, p.serializeCellData, "jqGridSerializeCellData", postdata), function(index, value) {
+                    formData.append(index, value);
+                  });
                   $.ajax($.extend({
                     url: $.isFunction(p.cellurl) ? p.cellurl.call($t, p.cellurl, iRow, iCol, rowid, v, nm) : p.cellurl,
                     //data :$.isFunction(p.serializeCellData) ? p.serializeCellData.call($t, postdata) : postdata,
-                    data: jgrid.serializeFeedback.call($t, p.serializeCellData, "jqGridSerializeCellData", postdata),
+                    //data: jgrid.serializeFeedback.call($t, p.serializeCellData, "jqGridSerializeCellData", postdata),
                     type: "POST",
-                    complete: function(jqXHR) {
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    complete: function(jqXHR, textStatus) {
                       $self.jqGrid("progressBar", {
                         method: "hide",
                         loadtype: p.loadui
                       });
                       hDiv.loading = false;
                       if ((jqXHR.status < 300 || jqXHR.status === 304) && (jqXHR.status !== 0 || jqXHR.readyState !== 4)) {
-                        var ret = $self.triggerHandler("jqGridAfterSubmitCell", [$t, jqXHR, postdata.id, nm, v, iRow, iCol]) || [true, ""];
-                        if (ret[0] === true && $.isFunction(p.afterSubmitCell)) {
-                          ret = p.afterSubmitCell.call($t, jqXHR, postdata.id, nm, v, iRow, iCol);
-                        }
-                        if (ret[0] === true) {
-                          $self.jqGrid("setCell", rowid, iCol, v, false, false, true);
-                          cc.addClass("dirty-cell");
-                          $tr.addClass("edited");
-                          feedback.call($t, "afterSaveCell", rowid, nm, v, iRow, iCol);
-                          savedRow.splice(0, 1);
+                        if (textStatus === "success" && (jqXHR.responseJSON === undefined || jqXHR.responseJSON.status !== "error")) {
+
+                          if (cm.edittype === "file") {
+                            v = jqXHR.responseJSON === undefined ? null : jqXHR.responseJSON.filelist.nm;
+                          }
+
+                          var ret = $self.triggerHandler("jqGridAfterSubmitCell", [$t, jqXHR, postdata.id, nm, v, iRow, iCol]) || [true, ""];
+                          if (ret[0] === true && $.isFunction(p.afterSubmitCell)) {
+                            ret = p.afterSubmitCell.call($t, jqXHR, postdata.id, nm, v, iRow, iCol);
+                          }
+                          if (ret[0] === true) {
+                            $self.jqGrid("setCell", rowid, iCol, v, false, false, true);
+                            cc.addClass("dirty-cell");
+                            $tr.addClass("edited");
+                            feedback.call($t, "afterSaveCell", rowid, nm, v, iRow, iCol);
+                            savedRow.splice(0, 1);
+                          } else {
+                            infoDialog.call($t, errcap, ret[1], bClose);
+                            $self.jqGrid("restoreCell", iRow, iCol);
+                          }
                         } else {
-                          infoDialog.call($t, errcap, ret[1], bClose);
-                          $self.jqGrid("restoreCell", iRow, iCol);
+                          if (jqXHR.responseJSON !== undefined) {
+                            alert(jqXHR.responseJSON.statusText);
+                          }
                         }
                       }
                     },
@@ -370,7 +412,7 @@
             } else {
               try {
                 setTimeout(function() {
-                  infoDialog.call($t, errcap, v + " " + cv[1], bClose);
+                  infoDialog.call($t, errcap, cv[1], bClose);
                 }, 100);
                 $self.jqGrid("restoreCell", iRow, iCol);
               } catch (ignore) {}
@@ -397,12 +439,6 @@
         var savedRow = p.savedRow,
           cc = getTdByColumnIndex.call($t, tr, iCol);
         if (savedRow.length >= 1) {
-          // datepicker fix
-          if ($.isFunction($.fn.datepicker)) {
-            try {
-              $("input.hasDatepicker", cc).datepicker("hide");
-            } catch (ignore) {}
-          }
           cm = p.colModel[iCol];
           if (p.treeGrid === true && cm.name === p.ExpandColumn) {
             cc.children("span.cell-wrapperleaf,span.cell-wrapper").empty();
@@ -524,7 +560,6 @@
               st = bDiv.scrollTop,
               nRot = tr.offsetTop + tr.clientHeight,
               pRot = tr.offsetTop;
-
             if (tp === "vd") {
               if (nRot >= ch) {
                 bDiv.scrollTop = bDiv.scrollTop + tr.clientHeight;
@@ -542,7 +577,6 @@
               td = tr.cells[iC],
               nCol = td.offsetLeft + td.clientWidth,
               pCol = td.offsetLeft;
-
             if (nCol >= cw + parseInt(sl, 10)) {
               bDiv.scrollLeft = bDiv.scrollLeft + td.clientWidth;
             } else if (pCol < sl) {

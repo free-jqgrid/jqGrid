@@ -481,7 +481,7 @@
         hid = clid + "_" + i;
         icon = "<span style='cursor:pointer;margin-" +
           (p.direction === "rtl" ? "right:" : "left:") + (n.idx * 12) +
-          "px;' class='" + grp.commonIconClass + " " + pmrtl +
+          "px;' class='" + pmrtl + grp.commonIconClass +
           "' onclick=\"jQuery('#" + jgrid.jqID(p.id).replace("\\", "\\\\") +
           "').jqGrid('groupingToggle','" + hid + "', this);return false;\"></span>";
         try {

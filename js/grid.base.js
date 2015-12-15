@@ -8,12 +8,12 @@
  * Dual licensed under the MIT and GPL licenses
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl-2.0.html
- * Date: 2015-12-14
+ * Date: 2015-12-14 Edit By ToNict
  */
 //jsHint options
 /*jshint evil:true, eqeqeq:false, eqnull:true, devel:true */
 /*jslint browser: true, devel: true, eqeq: true, nomen: true, plusplus: true, unparam: true, vars: true, evil: true, regexp: true, white: true, todo: true */
-/*global jQuery, define, HTMLElement, HTMLTableRowElement */
+/*global jQuery, app, phpGrid, define, HTMLElement, HTMLTableRowElement */
 
 (function(factory) {
   "use strict";
@@ -45,8 +45,10 @@
       pgnext: "Next Page",
       pgprev: "Previous Page",
       pgrecs: "Records per Page",
-      showhide: "Toggle Expand Collapse Grid",
-      savetext: "Saving..."
+      showhide: "Toggle expand collapse grid",
+      savetext: "Saving...",
+      nodata: "No data to display",
+      pleaseSelect: "Please select an option"
     },
     search: {
       caption: "Search...",
@@ -109,11 +111,13 @@
         text: "any"
       }],
       operandTitle: "Click to select search operation.",
-      resetTitle: "Reset Search Value"
+      resetTitle: "Reset Search Value",
+      emptyOptionText: "All"
     },
     edit: {
-      addCaption: "Add Record",
-      editCaption: "Edit Record",
+      addCaption: "Add record",
+      editCaption: "Edit record",
+      bEdit: "Edit",
       bSubmit: "Submit",
       bCancel: "Cancel",
       bClose: "Close",
@@ -137,11 +141,11 @@
       }
     },
     view: {
-      caption: "View Record",
+      caption: "View record",
       bClose: "Close"
     },
     del: {
-      caption: "Delete",
+      caption: "Delete record",
       msg: "Delete selected record(s)?",
       bSubmit: "Delete",
       bCancel: "Cancel"
@@ -156,11 +160,13 @@
       searchtext: "",
       searchtitle: "Find records",
       refreshtext: "",
-      refreshtitle: "Reload Grid",
+      refreshtitle: "Reload grid",
       alertcap: "Warning",
       alerttext: "Please, select row",
       viewtext: "",
-      viewtitle: "View selected row"
+      viewtitle: "View selected row",
+      savetitle: "Save selected row",
+      canceltitle: "Cancel row editing"
     },
     col: {
       caption: "Select columns",
@@ -171,7 +177,8 @@
       errcap: "Error",
       nourl: "No url is set",
       norecords: "No records to process",
-      model: "Length of colNames <> colModel!"
+      model: "Length of colNames <> colModel!",
+      cannotAddSelect: "Please select master data!"
     },
     formatter: {
       integer: {
@@ -206,8 +213,9 @@
           var ending = ["st", "nd", "rd", "th"];
           return j < 11 || j > 13 ? ending[Math.min((j - 1) % 10, 3)] : "th";
         },
-        srcformat: "Y-m-d",
-        newformat: "n/j/Y",
+        srcformat: 'Y-m-d H:i:s',
+        newformat: 'd/m/Y',
+        isBuddhist: false,
         masks: {
           // see http://php.net/manual/en/function.date.php for PHP format used in jqGrid
           // and see http://docs.jquery.com/UI/Datepicker/formatDate
@@ -255,7 +263,8 @@
           // month with year
           //    Y - A full numeric representation of a year, 4 digits
           //    F - A full textual representation of a month
-          YearMonth: "F, Y" // in jQuery UI Datepicker: "MMMM, yyyy"
+          YearMonth: "F, Y", // in jQuery UI Datepicker: "MMMM, yyyy"
+          DateTime: "d/m/Y H:i:s"
         }
       }
     }
@@ -271,10 +280,10 @@
    * @enum {number} @const
    */
   /*var INPUT_NAME_TYPE = {
-  	COL_NAME: 0,
-  	ADDITIONAL_PROPERTY: 1,
-  	ROWID: 2
-  };*/
+   COL_NAME: 0,
+   ADDITIONAL_PROPERTY: 1,
+   ROWID: 2
+   };*/
   /**
    * Enum with different components of jqGrid.
    * @enum {number} @const
@@ -394,200 +403,225 @@
       unused: "" // used only to detect whether the changes are overwritten because of wrong usage
     },
     icons: {
-      jQueryUI: {
-        common: "ui-icon",
+      'default': {
+        common: "",
         pager: {
-          first: "ui-icon-seek-first",
-          prev: "ui-icon-seek-prev",
-          next: "ui-icon-seek-next",
-          last: "ui-icon-seek-end"
+          common: "glyphicon",
+          first: "glyphicon-step-backward",
+          prev: "glyphicon-backward",
+          next: "glyphicon-forward",
+          last: "glyphicon-step-forward"
         },
         sort: {
-          asc: "ui-icon-triangle-1-n",
-          desc: "ui-icon-triangle-1-s"
+          common: "glyphicon",
+          asc: "glyphicon-triangle-bottom",
+          desc: "glyphicon-triangle-top"
         },
         gridMinimize: {
-          visible: "ui-icon-circle-triangle-n",
-          hidden: "ui-icon-circle-triangle-s"
-        },
-        nav: {
-          edit: "ui-icon-pencil",
-          add: "ui-icon-plus",
-          del: "ui-icon-trash",
-          search: "ui-icon-search",
-          refresh: "ui-icon-refresh",
-          view: "ui-icon-document",
-          save: "ui-icon-disk",
-          cancel: "ui-icon-cancel",
-          newbutton: "ui-icon-newwin"
-        },
-        actions: {
-          edit: "ui-icon-pencil",
-          del: "ui-icon-trash",
-          save: "ui-icon-disk",
-          cancel: "ui-icon-cancel"
-        },
-        form: {
-          close: "ui-icon-closethick",
-          prev: "ui-icon-triangle-1-w",
-          next: "ui-icon-triangle-1-e",
-          save: "ui-icon-disk",
-          undo: "ui-icon-close",
-          del: "ui-icon-scissors",
-          cancel: "ui-icon-cancel",
-          resizableLtr: "ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se"
-        },
-        search: {
-          search: "ui-icon-search",
-          reset: "ui-icon-arrowreturnthick-1-w",
-          query: "ui-icon-comment"
-        },
-        subgrid: {
-          plus: "ui-icon-plus",
-          minus: "ui-icon-minus",
-          openLtr: "ui-icon-carat-1-sw",
-          openRtl: "ui-icon-carat-1-se"
-        },
-        grouping: {
-          plus: "ui-icon-circlesmall-plus",
-          minus: "ui-icon-circlesmall-minus"
-        },
-        treeGrid: {
-          minus: "ui-icon-triangle-1-s",
-          leaf: "ui-icon-radio-off",
-          plusLtr: "ui-icon-triangle-1-e",
-          plusRtl: "ui-icon-triangle-1-w"
-        }
-      },
-      fontAwesome: {
-        common: "fa",
-        pager: {
-          common: "fa-fw",
-          first: "fa-step-backward",
-          prev: "fa-backward",
-          next: "fa-forward",
-          last: "fa-step-forward"
-        },
-        sort: {
-          common: "fa-lg", // common: "",
-          asc: "fa-sort-asc", // asc: "fa-sort-amount-asc",
-          desc: "fa-sort-desc" // desc: "fa-sort-amount-desc"
-        },
-        gridMinimize: {
+          common: "fa",
           visible: "fa-chevron-circle-up",
           hidden: "fa-chevron-circle-down"
         },
         nav: {
-          common: "fa-lg fa-fw",
-          edit: "fa-pencil",
-          add: "fa-plus",
-          del: "fa-trash-o",
-          search: "fa-search",
-          refresh: "fa-refresh",
-          view: "fa-file-o",
-          save: "fa-floppy-o",
-          cancel: "fa-ban",
-          newbutton: "fa-external-link"
+          common: "glyphicon",
+          edit: "glyphicon-pencil",
+          add: "glyphicon-plus",
+          del: "glyphicon-trash",
+          search: "glyphicon-search",
+          refresh: "glyphicon-repeat",
+          view: "glyphicon-folder-open",
+          save: "glyphicon-floppy-save",
+          cancel: "glyphicon-ban-circle",
+          newbutton: "glyphicon-new-window"
         },
         actions: {
-          common: "ui-state-default fa-fw",
-          edit: "fa-pencil",
-          del: "fa-trash-o",
-          save: "fa-floppy-o",
-          cancel: "fa-ban"
+          common: "glyphicon",
+          edit: "glyphicon-pencil",
+          del: "glyphicon-trash",
+          save: "glyphicon-floppy-save",
+          cancel: "glyphicon-ban-circle"
         },
         form: {
-          close: "fa-times",
-          prev: "fa-caret-left",
-          next: "fa-caret-right",
-          save: "fa-floppy-o",
-          undo: "fa-undo",
-          del: "fa-trash-o",
-          cancel: "fa-ban",
-          resizableLtr: "ui-resizable-se ui-state-default fa fa-rss fa-rotate-270"
+          close: "glyphicon glyphicon-remove",
+          prev: "glyphicon glyphicon-step-backward",
+          next: "glyphicon glyphicon-step-forward",
+          save: "glyphicon glyphicon-floppy-save",
+          undo: "fa fa-undo",
+          del: "glyphicon glyphicon-trash",
+          required: "glyphicon glyphicon-asterisk icon-req",
+          cancel: "",
+          error: "glyphicon glyphicon-exclamation-sign"
+            // resizableLtr: "ui-resizable-se ui-state-default fa fa-rss fa-rotate-270"
         },
         search: {
-          search: "fa-search",
-          reset: "fa-undo",
-          query: "fa-comments-o"
+          common: "glyphicon",
+          search: "glyphicon-search",
+          reset: "glyphicon-repeat",
+          query: "glyphicon-comment"
         },
         subgrid: {
-          common: "ui-state-default fa-fw",
-          plus: "fa-plus",
-          minus: "fa-minus",
-          openLtr: "fa-reply fa-rotate-180",
-          openRtl: "fa-share fa-rotate-180"
+          common: "glyphicon",
+          plus: "glyphicon-triangle-right",
+          minus: "glyphicon-triangle-bottom",
+          openLtr: "glyphicon-share-alt",
+          openRtl: "glyphicon-share-alt"
         },
         grouping: {
-          common: "fa-fw",
-          plus: "fa-plus-square-o",
-          minus: "fa-minus-square-o"
+          common: "fa",
+          plus: "fa-plus-square",
+          minus: "fa-minus-square"
         },
         treeGrid: {
-          common: "fa-fw",
-          minus: "fa-lg fa-sort-desc",
-          leaf: "fa-dot-circle-o",
-          plusLtr: "fa-lg fa-caret-right",
-          plusRtl: "fa-lg fa-caret-left"
+          common: "glyphicon",
+          minus: "glyphicon-triangle-bottom",
+          leaf: "glyphicon-unchecked",
+          plusLtr: "glyphicon-triangle-right",
+          plusRtl: "glyphicon-triangle-left"
+        },
+        other: {
+          caption: "glyphicon glyphicon-th-large",
+          loading: "fa fa-spinner fa-spin",
+          noDataDisplay: "glyphicon glyphicon-exclamation-sign"
         }
-      }
+      },
+      // fontAwesome: {
+      //   common: "fa",
+      //   pager: {
+      //     common: "fa-fw",
+      //     first: "fa-step-backward",
+      //     prev: "fa-backward",
+      //     next: "fa-forward",
+      //     last: "fa-step-forward"
+      //   },
+      //   sort: {
+      //     common: "fa-lg", // common: "",
+      //     asc: "fa-sort-asc", // asc: "fa-sort-amount-asc",
+      //     desc: "fa-sort-desc" // desc: "fa-sort-amount-desc"
+      //   },
+      //   gridMinimize: {
+      //     visible: "fa-chevron-circle-up",
+      //     hidden: "fa-chevron-circle-down"
+      //   },
+      //   nav: {
+      //     common: "fa-lg fa-fw",
+      //     edit: "fa-pencil",
+      //     add: "fa-plus",
+      //     del: "fa-trash-o",
+      //     search: "fa-search",
+      //     refresh: "fa-refresh",
+      //     view: "fa-file-o",
+      //     save: "fa-floppy-o",
+      //     cancel: "fa-ban",
+      //     newbutton: "fa-external-link"
+      //   },
+      //   actions: {
+      //     common: "ui-state-default fa-fw",
+      //     edit: "fa-pencil",
+      //     del: "fa-trash-o",
+      //     save: "fa-floppy-o",
+      //     cancel: "fa-ban"
+      //   },
+      //   form: {
+      //     close: "fa-times",
+      //     prev: "fa-caret-left",
+      //     next: "fa-caret-right",
+      //     save: "fa-floppy-o",
+      //     undo: "fa-undo",
+      //     del: "fa-trash-o",
+      //     cancel: "fa-ban",
+      //     resizableLtr: "ui-resizable-se ui-state-default fa fa-rss fa-rotate-270"
+      //   },
+      //   search: {
+      //     search: "fa-search",
+      //     reset: "fa-undo",
+      //     query: "fa-comments-o"
+      //   },
+      //   subgrid: {
+      //     common: "ui-state-default fa-fw",
+      //     plus: "fa-plus",
+      //     minus: "fa-minus",
+      //     openLtr: "fa-reply fa-rotate-180",
+      //     openRtl: "fa-share fa-rotate-180"
+      //   },
+      //   grouping: {
+      //     common: "fa-fw",
+      //     plus: "fa-plus-square-o",
+      //     minus: "fa-minus-square-o"
+      //   },
+      //   treeGrid: {
+      //     common: "fa-fw",
+      //     minus: "fa-lg fa-sort-desc",
+      //     leaf: "fa-dot-circle-o",
+      //     plusLtr: "fa-lg fa-caret-right",
+      //     plusRtl: "fa-lg fa-caret-left"
+      //   }
+      // }
     },
     guiStyles: {
-      jQueryUI: {
-        gBox: "ui-widget ui-widget-content ui-corner-all", // ui-widget-content??? for the children of gbox
+      bootstrap: {
+        gBox: "", // ui-widget-content??? for the children of gbox
         overlay: "ui-widget-overlay",
-        loading: "ui-state-default ui-state-active",
-        hDiv: "ui-state-default ui-corner-top",
+        loading: "",
+        hDiv: "", // Old:ui-state-default ui-corner-top
         hTable: "",
-        colHeaders: "ui-state-default",
+        colHeaders: "",
         states: {
           select: "ui-state-highlight",
-          disabled: "ui-state-disabled ui-jqgrid-disablePointerEvents",
+          disabled: "disabled",
           hover: "ui-state-hover", // can be table-hover on <table> only and style like .table-hover tbody tr:hover td
-          error: "ui-state-error",
+          error: "alert alert-danger",
           active: "ui-state-active",
           textOfClickable: "ui-state-default"
         },
         dialog: {
-          header: "ui-widget-header ui-dialog-titlebar ui-corner-all ui-helper-clearfix",
-          window: "ui-widget ui-widget-content ui-corner-all ui-front",
-          content: "ui-widget-content",
-          hr: "ui-widget-content",
-          fmButton: "ui-state-default",
-          dataField: "ui-widget-content ui-corner-all",
-          viewLabel: "ui-widget-content",
-          viewData: "ui-widget-content",
-          leftCorner: "ui-corner-left",
-          rightCorner: "ui-corner-right",
-          defaultCorner: "ui-corner-all"
+          // window: "modal fade in",
+          // dialog: "modal-dialog",
+          // header: "modal-header",
+          // content: "modal-content",
+          // hr: "ui-widget-content",
+          fmButton: "btn",
+          defaultButton: "btn-default",
+          primaryButton: "btn-primary",
+          successButton: "btn-success",
+          dangerButton: "btn-danger",
+          warningButton: "btn-warning",
+          dataField: "form-control input-sm",
+          viewLabel: "col-xs-12 col-sm-4",
+          viewData: "col-xs-12 col-sm-8",
+          // leftCorner: "ui-corner-left",
+          // rightCorner: "ui-corner-right",
+          // defaultCorner: "ui-corner-all"
+        },
+        filter: {
+          dataField: "form-control input-sm"
         },
         filterToolbar: {
-          dataField: "ui-widget-content"
+          dataField: "form-control input-xs"
         },
         subgrid: {
-          thSubgrid: "ui-state-default test", // used only with subGridModel
-          rowSubTable: "ui-widget-content", // used only with subGridModel additionally to ui-subtblcell
-          row: "ui-widget-content", // class of the subgrid row, additional to ui-subgrid
+          thSubgrid: "", // used only with subGridModel
+          rowSubTable: "", // used only with subGridModel additionally to ui-subtblcell
+          row: "", // class of the subgrid row, additional to ui-subgrid
           tdStart: "", // it can be with span over rownumber and multiselect columns
-          tdWithIcon: "ui-widget-content", // class of cell with +- icon, additional to subgrid-cell
-          tdData: "ui-widget-content" // class of main td with span over the grid, additional subgrid-data
+          tdWithIcon: "", // class of cell with +- icon, additional to subgrid-cell
+          tdData: "" // class of main td with span over the grid, additional subgrid-data
         },
         grid: "",
-        gridRow: "ui-widget-content",
-        rowNum: "ui-state-default",
+        gridRow: "",
+        rowNum: "",
         gridFooter: "",
-        rowFooter: "ui-widget-content",
-        gridTitle: "ui-widget-header ui-corner-top",
-        titleButton: "ui-corner-all",
-        toolbarUpper: "ui-state-default",
-        toolbarBottom: "ui-state-default",
-        pager: "ui-state-default",
-        pagerButton: "ui-corner-all",
-        pagerInput: "ui-widget-content",
-        pagerSelect: "ui-widget-content",
-        top: "ui-corner-top",
-        bottom: "ui-corner-bottom",
-        resizer: "ui-widget-header"
+        rowFooter: "",
+        gridTitle: "", // Old:ui-widget-header ui-corner-top
+        titleButton: "", // Old:ui-corner-all
+        toolbarUpper: "",
+        toolbarBottom: "",
+        pager: "",
+        pagerButton: "",
+        pagerInput: "",
+        pagerSelect: "",
+        top: "",
+        bottom: "",
+        resizer: ""
       }
     },
     htmlDecode: function(value) {
@@ -981,8 +1015,7 @@
       } else if (!newformat) {
         newformat = "Y-m-d";
       }
-      var
-        hours = timestamp.getHours(), // a Number, from 0 to 23, representing the hour
+      var hours = timestamp.getHours(), // a Number, from 0 to 23, representing the hour
         i = timestamp.getMinutes(),
         j = timestamp.getDate(),
         n = timestamp.getMonth() + 1,
@@ -990,8 +1023,17 @@
         s = timestamp.getSeconds(),
         u = timestamp.getMilliseconds(),
         w = timestamp.getDay(),
-        year = timestamp.getFullYear(), // a Number, representing four digits, representing the year. Examples: 1999 or 2003
-        dayOfWeek = (w + 6) % 7 + 1, // numeric representation of the day of the week. 1 (for Monday) through 7 (for Sunday)
+        year = timestamp.getFullYear(); // a Number, representing four digits, representing the year. Examples: 1999 or 2003
+
+      if (opts.isBuddhist === true) {
+        if (opts.srcformat !== newformat) {
+          year += 543;
+        } else {
+          year -= 543;
+        }
+      }
+
+      var dayOfWeek = (w + 6) % 7 + 1, // numeric representation of the day of the week. 1 (for Monday) through 7 (for Sunday)
         z = (new Date(year, n - 1, j) - new Date(year, 0, 1)) / 86400000,
         weekNumberOfYear = dayOfWeek < 5 ?
         Math.floor((z + dayOfWeek - 1) / 7) + 1 :
@@ -1017,7 +1059,8 @@
           // Year
           L: "?", // Whether it's a leap year. 1 if it is a leap year, 0 otherwise.
           o: "?", // SO-8601 year number. This has the same value as Y, except that if the ISO week number (W) belongs to the previous or next year, that year is used instead. Examples: 1999 or 2003
-          Y: year, // A full numeric representation of a year, 4 digits. Examples: 1999 or 2003
+          Y: year,
+          // A full numeric representation of a year, 4 digits. Examples: 1999 or 2003
           y: String(year).substring(2), // A two digit representation of a year. Examples: 99 or 03
           // Time
           a: hours < 12 ? opts.AmPm[0] : opts.AmPm[1], // Lowercase Ante meridiem and Post meridiem: am or pm
@@ -1147,7 +1190,7 @@
           hDiv.scrollLeft = bDiv.scrollLeft;
         };
       if ($(bDiv).width() > 0) {
-        p.scrollOffset = (bDiv.offsetWidth - bDiv.clientWidth); // can be 0 if no scrollbar exist
+        // p.scrollOffset = (bDiv.offsetWidth - bDiv.clientWidth); // can be 0 if no scrollbar exist
         // TODO: add detection of the width of vertical scroll bar if the grid is hidden
         // at the moment of executing fixScrollOffsetAndhBoxPadding (for example inside of inactive jQuery UI Tab)
         // one need just create close construction with visible:hidden style, add to body and get its width
@@ -1263,7 +1306,7 @@
     getDataFieldOfCell: function(tr, iCol) {
       var p = this.p,
         $td = jgrid.getCell.call(this, tr, iCol);
-      if (p.treeGrid && $td.children("div.tree-wrap").length > 0) {
+      if (p.treeGrid && $td.children("span.tree-wrap").length > 0) {
         $td = $td.children("span.cell-wrapperleaf,span.cell-wrapper");
       }
       return p.colModel[iCol].autoResizable ?
@@ -1307,7 +1350,7 @@
           if (!$dataElement.hasClass("not-editable-cell")) {
             dataWidth = $dataElement.width();
             if (p.treeGrid === true && nm === p.ExpandColumn) {
-              dataWidth -= $dataElement.children("div.tree-wrap").outerWidth();
+              dataWidth -= $dataElement.children("span.tree-wrap").outerWidth();
               $dataElement = $dataElement.children("span.cell-wrapperleaf,span.cell-wrapper").first();
             } else {
               dataWidth = 0; // we can test it in the callback and use width:auto in the case
@@ -1350,14 +1393,15 @@
         customValue = editoptions.custom_value,
         nameSelector = "[name=" + jgrid.jqID(cm.name) + "]",
         $t = this,
-        $self = $($t);
+        $self = $($t),
+        infoDialog, getRes, errcap, bClose;
       if (editable === "hidden") {
         // the implementation from the next line can be improved
         return $($t).jqGrid("getCell", $dataFiled.closest("tr.jqgrow").attr("id"), cm.name);
       }
       switch (cm.edittype) {
         case "checkbox":
-          checkBoxValues = ["Yes", "No"];
+          checkBoxValues = ["T", "F"];
           if (typeof editoptions.value === "string") {
             checkBoxValues = editoptions.value.split(":");
           }
@@ -1386,6 +1430,11 @@
             result = $field[selectMethod]();
           }
           break;
+        case "file":
+          var input = $dataFiled.find("input" + nameSelector).val();
+          var $inputFile = $dataFiled.find("input[name=File" + jgrid.jqID(cm.name) + "]");
+          result = [input, $inputFile.val(), $inputFile[0].files[0]];
+          break;
         case "custom":
           try {
             if ($.isFunction(customValue)) {
@@ -1397,24 +1446,19 @@
               throw "e1";
             }
           } catch (e) {
-            var errorText, infoDialog = jgrid.info_dialog,
-              getRes = function(path) {
-                $self.jqGrid("getGridRes", path);
-              };
-            switch (String(e)) {
-              case "e1":
-                errorText = "function 'custom_value' " + getRes("edit.msg.nodefined");
-                break;
-              case "e2":
-                break;
-              default:
-                errorText = e.message;
-                break;
+            infoDialog = jgrid.info_dialog;
+            getRes = function(path) {
+              $self.jqGrid("getGridRes", path);
+            };
+            errcap = getRes("errors.errcap");
+            bClose = getRes("edit.bClose");
+            if (e === "e1") {
+              infoDialog.call($t, errcap, "function 'custom_value' " + getRes("edit.msg.nodefined"), bClose);
             }
-            if (infoDialog && $.isFunction(infoDialog)) {
-              infoDialog.call($t, getRes("errors.errcap"), errorText, getRes("edit.bClose"));
+            if (e === "e2") {
+              infoDialog.call($t, errcap, "function 'custom_value' " + getRes("edit.msg.novalue"), bClose);
             } else {
-              alert(errorText);
+              infoDialog.call($t, errcap, e.message, bClose);
             }
           }
           break;
@@ -1899,7 +1943,7 @@
           this._compareValues = function(func, f, v, how, t) {
             var fld;
             if (_useProperties) {
-              fld = f;
+              fld = 'jQuery.jgrid.getAccessor(this,\'' + f + '\')';
             } else {
               fld = "this";
             }
@@ -2154,9 +2198,9 @@
      *  @param {String} text
      *  @param {String} icon
      *  @param {String} iconOnLeftOrRight - string "left", "right" or undefined
-     *  @param {String} conner - string "left", "right" or undefined.
+     *  @param {String} style - string
      */
-    builderFmButon: function(id, text, icon, iconOnLeftOrRight, conner) {
+    builderFmButon: function(id, text, icon, iconOnLeftOrRight, style) {
       var p = this.p,
         getDialogGuiStyles = function(name) {
           return jgrid.getRes(jgrid.guiStyles[p.guiStyle], "dialog." + name);
@@ -2165,17 +2209,15 @@
         return "";
       }
 
-      return "<a id='" + id + "' class='" +
+      return "<button type='button' id='" + id + "' class='" +
         jgrid.mergeCssClasses("fm-button",
           getDialogGuiStyles("fmButton"),
-          getDialogGuiStyles(conner === "right" ? "rightCorner" : (conner === "left" ? "leftCorner" : "defaultCorner")),
-          iconOnLeftOrRight === "right" ?
-          "fm-button-icon-right" :
-          (iconOnLeftOrRight === "left" ? "fm-button-icon-left" : "")
-        ) + "' role='button' tabindex='0'>" +
+          getDialogGuiStyles(style ? style : 'defaultButton'),
+          iconOnLeftOrRight === "right" ? "fm-button-icon-right" : (iconOnLeftOrRight === "left" ? "fm-button-icon-left" : "")
+        ) + "'>" +
         (icon ? "<span class='fm-button-icon " + (jgrid.getIconRes(p.iconSet, icon) || icon) + "'></span>" : "") +
         (text ? "<span class='fm-button-text'>" + text + "</span>" : "") +
-        "</a>";
+        "</button>";
     },
     convertOnSaveLocally: function(nData, cm, oData, rowid, item, iCol) {
       var self = this,
@@ -2253,12 +2295,12 @@
             });
           }
           if (hasCbox) {
-            checkboxHtml = "<input type='checkbox'" + " id='jqg_" + p.id + "_" + rowid +
-              "' class='cbox' name='jqg_" + p.id + "_" + rowid + "'" +
-              (checked ? " checked='checked' aria-checked='true'" : " aria-checked='false'") + "/>";
+            checkboxHtml = "<label class='checkbox'><input type='checkbox'" + " id='jqg_" + p.id + "_" + rowid +
+              "' class='cbox' " + //name='jqg_" + p.id + "_" + rowid + "'
+              (checked ? " checked='checked' aria-checked='true'" : " aria-checked='false'") + "/><i></i></label>";
           }
-          return "<td role='gridcell' " + formatCol(pos, irow, "", null, rowid, true) + ">" +
-            checkboxHtml + "</td>";
+
+          return "<td role='gridcell' " + formatCol(pos, irow, "", null, rowid, true) + ">" + checkboxHtml + "</td>";
         },
         addRowNum = function(pos, irow, pG, rN) {
           var v = (parseInt(pG, 10) - 1) * parseInt(rN, 10) + 1 + irow;
@@ -2329,7 +2371,7 @@
           rowData = [rowData.join("")];
         }
       }
-      if (p.grouping && $j.groupingRender) {
+      if (p.grouping && $j.groupingPrepare) {
         if (readAllInputData) {
           p.groupingView._locgr = true;
         }
@@ -2404,8 +2446,8 @@
         fatalErrorFunction = isFunction(defaults.fatalError) ? defaults.fatalError : alert,
         locale = pin.locale || defaults.locale || "en-US",
         direction = locales[locale] != null && typeof locales[locale].isRTL === "boolean" ? (locales[locale].isRTL ? "rtl" : "ltr") : "ltr",
-        iconSet = pin.iconSet || defaults.iconSet || "jQueryUI",
-        guiStyle = pin.guiStyle || defaults.guiStyle || "jQueryUI",
+        iconSet = pin.iconSet || defaults.iconSet || "default",
+        guiStyle = pin.guiStyle || defaults.guiStyle || "bootstrap",
         getIcon = function(path) {
           return jgrid.getIconRes(iconSet, path);
         },
@@ -2467,9 +2509,9 @@
             colModel: [],
             additionalProperties: [],
             arrayReader: [],
-            rowList: [],
+            rowList: [10, 20, 50, 100, 500],
             colNames: [],
-            sortorder: "asc",
+            sortorder: "",
             threeStateSort: false,
             //showOneSortIcon: pin.showOneSortIcon !== undefined ? pin.showOneSortIcon :
             //    pin.iconSet === "fontAwesome" ? true : false, // hide or set ui-state-disabled class on the other icon
@@ -2477,7 +2519,7 @@
             //datatype: pin.datatype !== undefined ? pin.datatype : // datatype parameter are specified - use it
             //    localData !== undefined || pin.url == null ? "local" : // data parameter specified or no url are specified
             //        pin.jsonReader != null && typeof pin.jsonReader === "object" ? "json" : "xml", // if jsonReader are specified - use "json". In all other cases - use "xml"
-            mtype: "GET",
+            mtype: "POST",
             altRows: false,
             selarrrow: [],
             savedRow: [],
@@ -2507,13 +2549,14 @@
             beforeRequest: null,
             beforeProcessing: null,
             onHeaderClick: null,
-            viewrecords: false,
+            viewrecords: true,
             loadonce: false,
             multiselect: false,
             multikey: false,
             editurl: "clientArray",
             search: false,
             caption: "",
+            captionicon: getIcon("other.caption"),
             hidegrid: true,
             hiddengrid: false,
             useUnformattedDataForCellAttr: true,
@@ -2539,7 +2582,9 @@
               deloper: "del",
               subgridid: "id",
               npage: null,
-              totalrows: "totalrows"
+              totalrows: "totalrows",
+              loadonce: "loadonce",
+              btnongrid: "btnongrid"
             },
             forceFit: false,
             gridstate: "visible",
@@ -2555,15 +2600,16 @@
             deselectAfterSort: true,
             multiPageSelection: false,
             scrollrows: false,
-            autowidth: false,
+            autowidth: true,
             scrollOffset: 18,
             cellLayout: 5,
-            subGridWidth: 16,
-            multiselectWidth: 16,
+            subGridWidth: 22,
+            multiselectWidth: 22,
             multiselectPosition: "left",
             gridview: (pin == null || pin.afterInsertRow == null), // use true if callback afterInsertRow is not specified
-            rownumWidth: 25,
-            rownumbers: false,
+            rownumWidth: 28,
+            rownumbers: true,
+            subGridRowNumbers: true,
             pagerpos: "center",
             footerrow: false,
             userDataOnFooter: false,
@@ -2605,17 +2651,28 @@
               groupSummaryPos: [],
               formatDisplayField: [],
               _locgr: false,
-              commonIconClass: getIcon("grouping.common"),
               plusicon: getIcon("grouping.plus"),
               minusicon: getIcon("grouping.minus")
             },
             ignoreCase: true,
             cmTemplate: {},
             idPrefix: "",
-            iconSet: iconSet, // "fontAwesome" or "jQueryUI" or some custom value
+            iconSet: iconSet, // "fontAwesome" or "bootstrap" or some custom value
             guiStyle: guiStyle,
             locale: locale,
             multiSort: false,
+            autoResizable: true,
+            gridLines: "both", // Add both, horizontal, vertical, none
+            whiteSpacePre: true,
+            globalId: "", // plugin global id
+            parentId: "", // plugin parent id
+            tabId: "", // plugin tabs panel id
+            tabsView: {
+              labelField: [],
+              labelText: ""
+            },
+            tableDnd: false, // jquery.tablednd.js
+            gridDetail: {}, // Grid Master/Detail
             treeIcons: {
               commonIconClass: getIcon("treeGrid.common"),
               plusLtr: getIcon("treeGrid.plusLtr"),
@@ -3289,7 +3346,7 @@
                   }
                   return rest + " style='" + encodeAttr(styleValue) + "'" +
                     (classes ? " class='" + encodeAttr(classes) + "'" : "") +
-                    (tilteValue ? " title='" + encodeAttr(tilteValue) + "'" : "");
+                    (tilteValue && cm.hidden !== true ? " title='" + encodeAttr(tilteValue) + "'" : "");
                 }
                 value = matches[3];
                 attrStr = matches[4];
@@ -3380,7 +3437,7 @@
               rdata = p.data[p._index[rowId]];
             }
             var curLevel = parseInt(rdata[p.treeReader.level_field] || 0, 10),
-              levelOffset = 18,
+              levelOffset = 19,
               rootLevel = parseInt(p.tree_root_level, 10),
               lftpos = rootLevel === 0 ? curLevel : curLevel - 1,
               isLeaf = rdata[p.treeReader.leaf_field],
@@ -3391,13 +3448,13 @@
               (isExpanded ? p.treeIcons.minus + " tree-minus" : p.treeIcons.plus + " tree-plus");
             //normalizeTreeGridProperties(rdata); // ??? don't needed more probably
 
-            v = "<div class='tree-wrap' style='width:" + ((lftpos + 1) * levelOffset) +
-              "px;'><div class='" +
+            v = "<span class='tree-wrap' style='width:" + ((lftpos + 1) * levelOffset) +
+              "px;'><span class='" +
               mergeCssClasses(p.treeIcons.commonIconClass, iconClass, "treeclick") +
               "' style='" +
               (p.ExpandColClick === true ? "cursor:pointer;" : "") +
               (p.direction === "rtl" ? "margin-right:" : "margin-left:") +
-              (lftpos * levelOffset) + "px;'></div></div>" +
+              (lftpos * levelOffset) + "px;'></span></span>" +
               "<span class='cell-wrapper" + (isLeaf ? "leaf" : "") + "'" +
               (p.ExpandColClick ? " style='cursor:pointer;'" : "") + ">" +
               v + "</span>";
@@ -3482,14 +3539,14 @@
           if (!isNaN(idName)) {
             idIndex = Number(idName);
             /*for (cmName in arrayReaderInfos) {
-            	if (arrayReaderInfos.hasOwnProperty(cmName)) {
-            		info = arrayReaderInfos[cmName];
-            		if (info.order === idIndex) {
-            			idName = info.name;
-            			break;
-            		}
-            	}
-            }*/
+             if (arrayReaderInfos.hasOwnProperty(cmName)) {
+             info = arrayReaderInfos[cmName];
+             if (info.order === idIndex) {
+             idName = info.name;
+             break;
+             }
+             }
+             }*/
           } else if (!isFunction(idName)) {
             if (p.arrayReaderInfos[idName] != null) {
               idIndex = p.arrayReaderInfos[idName].order;
@@ -3617,8 +3674,8 @@
               }
             }
           }
-          return "<tr role=\"row\" id=\"" + id + "\" tabindex=\"" + tabindex + "\" class=\"" + classes + "\"" +
-            (style === "" ? "" : " style=\"" + style + "\"") + restAttr + ">";
+          return '<tr role="row" id="' + id + '" tabindex="' + tabindex + '" class="' + classes + '"' +
+            (style === "" ? "" : ' style="' + style + '"') + restAttr + ">";
         },
         finalizationFormatters = function() {
           var i, formatName, fmatter = $.fn.fmatter;
@@ -3718,11 +3775,6 @@
             nCol = colModel.length,
             cm, cmName,
             iChild, children, nChildren, child,
-            // TODO: consider to introduce preloadedAttributes in the same way
-            //       like we use to preloadedNodes below and to cache .attributes[i]
-            //       in the same way like one cache .childNodes[i].
-            //       One should measure the performance, to find out whether
-            //       such caching will improve the performance.
             arrayReaderInfos = p.arrayReaderInfos,
             info, preloadedNodes = {},
             attrReader = function(nodeName) {
@@ -3738,11 +3790,11 @@
                 // but it is slowly in IE10 and especially in IE8.
                 // So we use the code which is very good for all web browsers
                 /*var elem = obj.getElementsByTagName(nodeName)[0], childNodes;
-                if (elem != null) {
-                	childNodes = elem.childNodes;
-                	return childNodes.length > 0 ? childNodes[0].nodeValue : undefined;
-                }
-                return undefined;*/
+                 if (elem != null) {
+                 childNodes = elem.childNodes;
+                 return childNodes.length > 0 ? childNodes[0].nodeValue : undefined;
+                 }
+                 return undefined;*/
                 var elem = preloadedNodes[nodeName],
                   childNodes;
                 if (elem == null) {
@@ -3773,12 +3825,12 @@
           var colReader = {},
             nameReader, isArrayCells, v, addProp, items,
             additionalProperties = p.additionalProperties,
-            setSimpleColReaderIfPossible = function(propName, nameReaderOrAddProp) {
+            setSimpleColReaderIfPossible = function(nameReaderOrAddProp) {
               if (isXML && typeof nameReaderOrAddProp === "string") {
                 if (/^\w+$/.test(nameReaderOrAddProp)) {
-                  colReader[propName] = nodeReader(nameReaderOrAddProp);
+                  colReader[nameReaderOrAddProp] = nodeReader(nameReaderOrAddProp);
                 } else if (/^\[\w+\]$/.test(nameReaderOrAddProp)) {
-                  colReader[propName] = attrReader(nameReaderOrAddProp.substring(1, nameReaderOrAddProp.length - 1));
+                  colReader[nameReaderOrAddProp] = attrReader(nameReaderOrAddProp.substring(1, nameReaderOrAddProp.length - 1));
                 }
               }
             };
@@ -3796,7 +3848,7 @@
                 colReader[cmName] = nameReader;
               }
               if (!isFunction(nameReader)) {
-                setSimpleColReaderIfPossible(cmName, nameReader);
+                setSimpleColReaderIfPossible(cmName);
               }
             }
           }
@@ -3806,7 +3858,7 @@
             if (typeof addProp === "object" && addProp != null) {
               addProp = addProp.name;
             }
-            setSimpleColReaderIfPossible(addProp, addProp);
+            setSimpleColReaderIfPossible(addProp);
           }
           // TODO: Consider to allow to specify key:true property in additionalProperties
           // in the case the item of additionalProperties should looks not like
@@ -3824,14 +3876,14 @@
           if (!isNaN(idName)) {
             idIndex = Number(idName);
             /*for (cmName in arrayReaderInfos) {
-            	if (arrayReaderInfos.hasOwnProperty(cmName)) {
-            		info = arrayReaderInfos[cmName];
-            		if (info.order === idIndex) {
-            			idName = info.name;
-            			break;
-            		}
-            	}
-            }*/
+             if (arrayReaderInfos.hasOwnProperty(cmName)) {
+             info = arrayReaderInfos[cmName];
+             if (info.order === idIndex) {
+             idName = info.name;
+             break;
+             }
+             }
+             }*/
           } else if (!isFunction(idName)) {
             //if (p.iColByName[idName] !== undefined || p.iPropByName[idName] !== undefined) {
             if (arrayReaderInfos[cmName]) {
@@ -3906,8 +3958,6 @@
                   preloadedNodes[child.nodeName] = child;
                 }
               }
-              // TODO: one can consider to examine cells.attributes and
-              //       to save all values in preloadedAttributes map.
             }
             for (cmName in arrayReaderInfos) {
               if (arrayReaderInfos.hasOwnProperty(cmName)) {
@@ -3995,7 +4045,7 @@
           }
 
           // refresh rowIndexes cash in case of usage grouping
-          if (p.grouping) {
+          if (p.grouping && $j.groupingPrepare) {
             rebuildRowIndexes.call(self);
           }
 
@@ -4036,6 +4086,14 @@
             self.updatepager(false, true);
           }
           finalizationFormatters.call(self);
+
+          if (p.reccount > 0) {
+            $(".ui-jqgrid-nodata", "#" + p.gViewId).hide();
+            $(".ui-jqgrid-bdiv", "#" + p.gViewId).css("-webkit-overflow-scrolling", "touch");
+            base.autoResize.call($self);
+          } else {
+            $(".ui-jqgrid-nodata", "#" + p.gViewId).show();
+          }
         },
         addLocalData = function() {
           var $self = $(this),
@@ -4404,9 +4462,25 @@
               $(this).html(base + 1 + i);
             });
           }
+
           if (dnd && p.jqgdnd) {
             $self.jqGrid("gridDnD", "updateDnD");
           }
+
+          if (p.toolbar[0]) {
+            if ((p.multiPageSelection && p.selarrrow.length === 0) || !p.multiPageSelection) {
+              $('.selectable', '#t_' + p.id).prop("disabled", true);
+            }
+          }
+
+          if (p.treeGrid) {
+            $self.setTreeMoveNode();
+          }
+
+          if (dnd && p.tableDnd) {
+            $self.tableDnDUpdate();
+          }
+
           feedback.call(self, "gridComplete");
           $self.triggerHandler("jqGridAfterGridComplete");
         },
@@ -4419,7 +4493,7 @@
           $j.progressBar.call($(self), {
             method: "show",
             loadtype: p.loadui,
-            htmlcontent: getDef("loadtext")
+            htmlcontent: "<span class='" + getIcon("other.loading") + "'></span> " + getDef("loadtext")
           });
         },
         endReq = function() {
@@ -4465,6 +4539,13 @@
             if (p.rowTotal !== null && pN.totalrows !== null) {
               prm[pN.totalrows] = p.rowTotal;
             }
+            if (pN.loadonce !== null) {
+              prm[pN.loadonce] = ts.p.loadonce;
+            }
+            if (p.treeGrid === true && pN.btnongrid !== null) {
+              prm[pN.btnongrid] = p.btnongrid;
+            }
+
             var lcf = isFunction(p.loadComplete),
               lc = lcf ? p.loadComplete : null;
             var adjust = 0;
@@ -4487,7 +4568,7 @@
             } else if (pN.npage !== null) {
               delete p.postData[pN.npage];
             }
-            if (p.grouping && $j.groupingSetup) {
+            if (p.grouping) {
               $j.groupingSetup.call($self);
               var grp = p.groupingView,
                 gi, gs = "",
@@ -4543,6 +4624,10 @@
                 p.datatype = "local";
                 p.datastr = null;
                 fixDisplayingHorizontalScrollbar();
+
+                setTimeout(function() {
+                  base.autoResize.call($self);
+                }, 0);
               },
               finalReportVirtual = function(data) {
                 $self.triggerHandler("jqGridLoadComplete", [data]);
@@ -4558,6 +4643,10 @@
                   endReq.call(self);
                 }
                 fixDisplayingHorizontalScrollbar();
+
+                setTimeout(function() {
+                  base.autoResize.call($self);
+                }, 0);
               };
             if (!feedback.call(self, "beforeRequest")) {
               return;
@@ -4650,8 +4739,8 @@
           }
         },
         setPager = function(pgid, tp) {
-          var hoverClasses = getGuiStyles("states.hover"),
-            disabledClasses = getGuiStyles("states.disabled"),
+          var disabledClasses = getGuiStyles("states.disabled"),
+            /* hoverClasses = getGuiStyles("states.hover"),  */
             sep = "<td class='ui-pg-button " + disabledClasses + "'><span class='ui-separator'></span></td>",
             pginp = "",
             blockAlign = p.pagerpos === "left" ? "margin-right:auto;" : (p.pagerpos === "right" ? "margin-left:auto;" : "margin-left:auto;margin-right:auto;"),
@@ -4764,12 +4853,10 @@
               if (hasOneFromClasses(this, disabledClasses)) {
                 this.style.cursor = "default";
               } else {
-                $(this).addClass(hoverClasses);
                 this.style.cursor = "pointer";
               }
             }, function() {
               if (!hasOneFromClasses(this, disabledClasses)) {
-                $(this).removeClass(hoverClasses);
                 this.style.cursor = "default";
               }
             });
@@ -4863,11 +4950,10 @@
           });
         },
         multiSort = function(iCol, obj) {
-          var splas, sort = "",
-            colModel = p.colModel,
+          var colModel = p.colModel,
             cm = colModel[iCol],
-            fs = false,
             so = "",
+            sn, // splas, sort = "", fs = false,
             disabledClasses = getGuiStyles("states.disabled"),
             $selTh = p.frozenColumns ? $(obj) : $(ts.grid.headers[iCol].el),
             $iconsSpan = $selTh.find("span.s-ico"),
@@ -4878,6 +4964,7 @@
 
           $selTh.find("span.ui-grid-ico-sort").addClass(disabledClasses); // for both icons
           $selTh.attr("aria-selected", "false");
+          sn = (cm.index || cm.name);
 
           // first set new value of lso:
           // "asc" -> "asc-desc", new sorting to "desc"
@@ -4913,21 +5000,31 @@
             }
             $selTh.attr("aria-selected", "true");
           }
-          p.sortorder = "";
-          each(colModel, function(i) {
-            if (this.lso) {
-              if (i > 0 && fs) {
-                sort += ", ";
-              }
-              splas = this.lso.split("-");
-              sort += colModel[i].index || colModel[i].name;
-              sort += " " + splas[splas.length - 1];
-              fs = true;
-              p.sortorder = splas[splas.length - 1];
+
+          var isn = sortarr.indexOf(sn);
+          if (isn === -1) {
+            sortarr.push(sn);
+            sortord.push(so);
+          } else {
+            if (so) {
+              sortord[isn] = so;
+            } else {
+              sortord.splice(isn, 1);
+              sortarr.splice(isn, 1);
             }
-          });
-          sort = sort.substring(0, sort.lastIndexOf(p.sortorder));
-          p.sortname = sort;
+          }
+          p.sortorder = "";
+          p.sortname = "";
+          for (var i = 0, len = sortarr.length; i < len; i++) {
+            if (i > 0) {
+              p.sortname += ", ";
+            }
+            p.sortname += sortarr[i];
+            if (i !== len - 1) {
+              p.sortname += " " + sortord[i];
+            }
+          }
+          p.sortorder = sortord[len - 1];
         },
         sortData = function(index, idxcol, reload, sor, obj) {
           var self = this,
@@ -5100,6 +5197,11 @@
           if (isNaN(p.width)) {
             p.width = initialWidth + ((p.shrinkToFit === false && !isNaN(p.height)) ? scrollbarWidth : 0);
           }
+
+          if (initialWidth > p.width) {
+            numberOfVariableColumns = 0;
+          }
+
           grid.width = p.width;
           p.tblwidth = initialWidth;
           if (p.shrinkToFit === false && p.forceFit === true) {
@@ -5192,7 +5294,7 @@
       }
       if (p.multiselect && (p.multiselectPosition === "left" || p.multiselectPosition === "right")) {
         var insertMethod = p.multiselectPosition === "left" ? "unshift" : "push";
-        p.colNames[insertMethod]("<input id='" + p.cbId + "' class='cbox' type='checkbox' aria-checked='false'/>");
+        p.colNames[insertMethod]("<label class='checkbox'><input id='" + p.cbId + "' class='cbox' type='checkbox' aria-checked='false'/><i></i></label>");
         p.colModel[insertMethod]({
           name: "cb",
           width: jgrid.cell_width ? p.multiselectWidth + p.cellLayout : p.multiselectWidth,
@@ -5312,7 +5414,9 @@
         disabledStateClasses = getGuiStyles("states.disabled");
 
       if (p.multiSort) {
-        sortarr = p.sortname.split(",");
+        if (p.sortname) {
+          sortarr = p.sortname.split(",");
+        }
         var iSort;
         for (iSort = 0; iSort < sortarr.length; iSort++) {
           sotmp = trim(sortarr[iSort]).split(" ");
@@ -5325,6 +5429,12 @@
         tooltip = p.headertitles || cmi.headerTitle ? (" title='" + stripHtml(typeof cmi.headerTitle === "string" ? cmi.headerTitle : p.colNames[iCol]) + "'") : "";
         thead += "<th id='" + p.id + "_" + cmi.name + "' class='" + getGuiStyles("colHeaders", "ui-th-column ui-th-" + dir + " " + (cmi.labelClasses || "")) + "'" + tooltip + ">";
         idn = cmi.index || cmi.name;
+        labelStyle = "";
+
+        if (cmi.align === "center") {
+          labelStyle = "text-align:center;";
+        }
+
         switch (cmi.labelAlign) {
           case "left":
             labelStyle = "text-align:left;";
@@ -5337,22 +5447,19 @@
               "text-align:left;" :
               (cmi.align === "right" ? "text-align:right;" + (cmi.sortable === false ? "" : "padding-right:" + p.autoResizing.widthOfVisiblePartOfSortIcon + "px;") : "");
             break;
-          default:
-            labelStyle = "";
         }
 
         thead += "<div id='jqgh_" + p.id + "_" + cmi.name + "'" +
-          (isMSIE ? " class='ui-th-div-ie'" : "") +
-          (labelStyle === "" ? "" : " style='" + labelStyle + "'") + ">";
-        headerText = cmi.autoResizable && cmi.formatter !== "actions" ?
-          "<span class='" + p.autoResizing.wrapperClassName + "'>" + p.colNames[iCol] + "</span>" :
+          (isMSIE ? " class='ui-th-div-ie'" : "") + ">";
+        headerText = (cmi.name !== 'rn' && cmi.name !== 'cb') ?
+          "<span " + (cmi.autoResizable && cmi.formatter !== "actions" ? "class='" + p.autoResizing.wrapperClassName + "' " : '') + (labelStyle === "" ? "" : " style='" + labelStyle + "'") + ">" + p.colNames[iCol] + "</span>" :
           p.colNames[iCol];
         if (p.sortIconsBeforeText) {
           thead += (p.builderSortIcons || jgrid.builderSortIcons).call(ts, iCol);
           thead += headerText;
         } else {
           thead += headerText;
-          thead += (p.builderSortIcons || jgrid.builderSortIcons).call(ts, iCol);
+          thead += (cmi.name !== 'rn' && cmi.name !== 'cb') ? (p.builderSortIcons || jgrid.builderSortIcons).call(ts, iCol) : '';
         }
         thead += "</div></th>";
         tbody += "<td></td>";
@@ -5403,7 +5510,7 @@
                   tabindex: "-1"
                 });
               if (iColCb !== undefined) { // p.multiselectCheckboxes
-                $(tr.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", toSelect);
+                $(tr.cells[iColCb]).find("input.cbox")[p.propOrAttr]("checked", toSelect);
               }
             },
             frozenRows = grid.fbRows,
@@ -5436,7 +5543,11 @@
               }
             }
           });
+
           feedback.call(ts, "onSelectAll", toCheck ? p.selarrrow : emp, toCheck);
+          if (p.toolbar[0]) {
+            $('.selectable', '#t_' + p.id).prop("disabled", !toCheck);
+          }
           // it's important don't use return false in the event handler
           // the usage of return false break checking/unchecking
         });
@@ -5487,150 +5598,161 @@
       }
       var firstr = "<tr class='jqgfirstrow' role='row' style='height:auto'>";
       p.disableClick = false;
-      $("th", hTable[0].tHead.rows[0])
-        .each(function(j) {
-          var cm = p.colModel[j],
-            nm = cm.name,
-            $th = $(this),
-            $sortableDiv = $th.children("div"),
-            $iconsSpan = $sortableDiv.children("span.s-ico"),
-            showOneSortIcon = p.showOneSortIcon;
+      $("th", hTable[0].tHead.rows[0]).each(function(j) {
+        var cm = p.colModel[j],
+          nm = cm.name,
+          $th = $(this),
+          $sortableDiv = $th.children("div"),
+          $iconsSpan = $sortableDiv.children("span.s-ico"),
+          showOneSortIcon = p.showOneSortIcon;
 
-          w = cm.width;
-          if (cm.resizable === undefined) {
-            cm.resizable = true;
+        w = cm.width;
+        if (cm.resizable === undefined) {
+          cm.resizable = true;
+        }
+        if (cm.resizable) {
+          res = document.createElement("span");
+          $(res).html("&#160;")
+            .addClass("ui-jqgrid-resize ui-jqgrid-resize-" + dir)
+            //.css("cursor","col-resize")
+            .bind("selectstart", function() {
+              return false;
+            });
+          $th.addClass(p.resizeclass);
+        } else {
+          res = "";
+        }
+        $th.css("width", w + "px").prepend(res);
+
+        res = null;
+        var hdcol = "";
+        if (cm.hidden === true) {
+          $th.css("display", "none");
+          hdcol = "display:none;";
+        }
+
+        var classes = "";
+        if (cm.onTablet === false) {
+          $th.addClass("visible-lg visible-md");
+          classes += " visible-lg visible-md";
+        }
+        if (cm.onMobile === false) {
+          $th.addClass("hidden-xs");
+          classes += " hidden-xs";
+        }
+
+        if (classes) {
+          cm.classes = cm.classes ? cm.classes + classes : classes;
+        }
+
+        firstr += "<td role='gridcell' " + (cm.classes ? "class='" + cm.classes + "' " : "") + "style='height:0;width:" + w + "px;" + hdcol + "'></td>";
+        grid.headers[j] = {
+          width: w,
+          el: this
+        };
+        sort = cm.sortable;
+        if (typeof sort !== "boolean") {
+          cm.sortable = true;
+          sort = true;
+        }
+        if (!(nm === "cb" || nm === "subgrid" || nm === "rn") && sort) {
+          if (p.viewsortcols[2]) {
+            // class ui-jqgrid-sortable changes the cursor in
+            $sortableDiv.addClass("ui-jqgrid-sortable");
           }
-          if (cm.resizable) {
-            res = document.createElement("span");
-            $(res).html("&#160;")
-              .addClass("ui-jqgrid-resize ui-jqgrid-resize-" + dir)
-              //.css("cursor","col-resize")
-              .bind("selectstart", function() {
-                return false;
-              });
-            $th.addClass(p.resizeclass);
-          } else {
-            res = "";
-          }
-          $th.css("width", w + "px")
-            .prepend(res);
-          res = null;
-          var hdcol = "";
-          if (cm.hidden === true) {
-            $th.css("display", "none");
-            hdcol = "display:none;";
-          }
-          firstr += "<td role='gridcell' " + (cm.classes ? "class='" + cm.classes + "' " : "") +
-            "style='height:0;width:" + w + "px;" + hdcol + "'></td>";
-          grid.headers[j] = {
-            width: w,
-            el: this
-          };
-          sort = cm.sortable;
-          if (typeof sort !== "boolean") {
-            cm.sortable = true;
-            sort = true;
-          }
-          if (!(nm === "cb" || nm === "subgrid" || nm === "rn") && sort) {
-            if (p.viewsortcols[2]) {
-              // class ui-jqgrid-sortable changes the cursor in
-              $sortableDiv.addClass("ui-jqgrid-sortable");
-            }
-          }
-          if (sort) {
-            if (p.multiSort) {
-              var notLso = cm.lso === "desc" ? "asc" : "desc";
-              if (p.viewsortcols[0]) {
-                $iconsSpan.css("display", "");
-                if (cm.lso) {
-                  $iconsSpan.children("span.ui-icon-" + cm.lso).removeClass(disabledStateClasses);
-                  if (showOneSortIcon) {
-                    $iconsSpan.children("span.ui-icon-" + notLso).hide();
-                  }
-                }
-              } else if (cm.lso) {
-                $iconsSpan.css("display", "");
+        }
+        if (sort) {
+          if (p.multiSort) {
+            var notLso = cm.lso === "desc" ? "asc" : "desc";
+            if (p.viewsortcols[0]) {
+              $iconsSpan.css("display", "");
+              if (cm.lso) {
                 $iconsSpan.children("span.ui-icon-" + cm.lso).removeClass(disabledStateClasses);
                 if (showOneSortIcon) {
                   $iconsSpan.children("span.ui-icon-" + notLso).hide();
                 }
               }
-            } else {
-              var notSortOrder = p.sortorder === "desc" ? "asc" : "desc";
-              if (p.viewsortcols[0]) {
-                $iconsSpan.css("display", "");
-                if (j === p.lastsort) {
-                  $iconsSpan.children("span.ui-icon-" + p.sortorder).removeClass(disabledStateClasses);
-                  if (showOneSortIcon) {
-                    $iconsSpan.children("span.ui-icon-" + notSortOrder).hide();
-                  }
-                }
-              } else if (j === p.lastsort && p.sortname !== "") {
-                $iconsSpan.css("display", "");
+            } else if (cm.lso) {
+              $iconsSpan.css("display", "");
+              $iconsSpan.children("span.ui-icon-" + cm.lso).removeClass(disabledStateClasses);
+              if (showOneSortIcon) {
+                $iconsSpan.children("span.ui-icon-" + notLso).hide();
+              }
+            }
+          } else {
+            var notSortOrder = p.sortorder === "desc" ? "asc" : "desc";
+            if (p.viewsortcols[0]) {
+              $iconsSpan.css("display", "");
+              if (j === p.lastsort) {
                 $iconsSpan.children("span.ui-icon-" + p.sortorder).removeClass(disabledStateClasses);
                 if (showOneSortIcon) {
                   $iconsSpan.children("span.ui-icon-" + notSortOrder).hide();
                 }
               }
-            }
-          }
-          if (p.footerrow) {
-            tfoot += "<td role='gridcell' " + formatCol(j, 0, "", null, "", false) + ">&#160;</td>";
-          }
-        })
-        .mousedown(function(e) {
-          var $th = $(this),
-            isFrozen = $th.closest(".ui-jqgrid-hdiv").hasClass("frozen-div"),
-            getOffset = function() {
-              var ret = [$th.position().left + $th.outerWidth()];
-              if (p.direction === "rtl") {
-                ret[0] = p.width - ret[0];
+            } else if (j === p.lastsort && p.sortname !== "") {
+              $iconsSpan.css("display", "");
+              $iconsSpan.children("span.ui-icon-" + p.sortorder).removeClass(disabledStateClasses);
+              if (showOneSortIcon) {
+                $iconsSpan.children("span.ui-icon-" + notSortOrder).hide();
               }
-              ret[0] -= isFrozen ? 0 : grid.bDiv.scrollLeft;
-              ret.push($(grid.hDiv).position().top);
-              ret.push($(grid.bDiv).offset().top - $(grid.hDiv).offset().top + $(grid.bDiv).height() +
-                (grid.sDiv ? $(grid.sDiv).height() : 0));
-              return ret;
-            },
-            ci;
-          if ($(e.target).closest("th>span.ui-jqgrid-resize").length !== 1) {
-            return;
-          }
-          ci = getColumnHeaderIndex(this);
-          if (ci != null) {
-            if (p.forceFit === true) {
-              p.nv = nextVisible(ci);
             }
-            grid.dragStart(ci, e, getOffset(), $th);
           }
+        }
+        if (p.footerrow) {
+          tfoot += "<td role='gridcell' " + formatCol(j, 0, "", null, "", false) + ">&#160;</td>";
+        }
+      }).mousedown(function(e) {
+        var $th = $(this),
+          isFrozen = $th.closest(".ui-jqgrid-hdiv").hasClass("frozen-div"),
+          getOffset = function() {
+            var ret = [$th.position().left + $th.outerWidth()];
+            if (p.direction === "rtl") {
+              ret[0] = p.width - ret[0];
+            }
+            ret[0] -= isFrozen ? 0 : grid.bDiv.scrollLeft;
+            ret.push($(grid.hDiv).position().top);
+            ret.push($(grid.bDiv).offset().top - $(grid.hDiv).offset().top + $(grid.bDiv).height() +
+              (grid.sDiv ? $(grid.sDiv).height() : 0));
+            return ret;
+          },
+          ci;
+        if ($(e.target).closest("th>span.ui-jqgrid-resize").length !== 1) {
+          return;
+        }
+        ci = getColumnHeaderIndex(this);
+        if (ci != null) {
+          if (p.forceFit === true) {
+            p.nv = nextVisible(ci);
+          }
+          grid.dragStart(ci, e, getOffset(), $th);
+        }
+        return false;
+      }).click(function(e) {
+        if (p.disableClick) {
+          p.disableClick = false;
           return false;
-        })
-        .click(function(e) {
-          if (p.disableClick) {
-            p.disableClick = false;
-            return false;
-          }
-          var s = "th.ui-th-column>div",
-            r, d;
-          if (!p.viewsortcols[2]) {
-            s += ">span.s-ico>span.ui-grid-ico-sort"; // sort only on click on sorting icon
-          } else {
-            s += ".ui-jqgrid-sortable";
-          }
-          var t = $(e.target).closest(s);
-          if (t.length !== 1) {
-            return;
-          }
-          if (!p.viewsortcols[2]) {
-            r = true;
-            d = t.hasClass("ui-icon-desc") ? "desc" : "asc";
-          }
-          var ci = getColumnHeaderIndex(this);
-          if (ci != null) {
-            sortData.call(ts, $("div", this)[0].id, ci, r, d, this);
-          }
-          return false;
-        });
+        }
+        var s = "th.ui-th-column>div",
+          r, d;
+        if (!p.viewsortcols[2]) {
+          s += ">span.s-ico>span.ui-grid-ico-sort"; // sort only on click on sorting icon
+        } else {
+          s += ".ui-jqgrid-sortable";
+        }
+        var t = $(e.target).closest(s);
+        if (t.length !== 1) {
+          return;
+        }
+        if (!p.viewsortcols[2]) {
+          r = true;
+          d = t.hasClass("ui-icon-desc") ? "desc" : "asc";
+        }
+        var ci = getColumnHeaderIndex(this);
+        if (ci != null) {
+          sortData.call(ts, $("div", this)[0].id, ci, r, d, this);
+        }
+        return false;
+      });
       if (p.sortable && $.fn.sortable) {
         try {
           $j.sortableColumns.call($self0, $(hTable[0].tHead.rows[0]));
@@ -5642,6 +5764,23 @@
       firstr += "</tr>";
       $(ts).html("<tbody>" + firstr + "</tbody>");
       //firstr = null;
+
+      switch (p.gridLines) {
+        case "horizontal":
+          $self0.addClass("ui-jqgrid-line-horizontal");
+          break;
+        case "vertical":
+          $self0.addClass("ui-jqgrid-line-vertical");
+          break;
+        case "none":
+          $self0.addClass("ui-jqgrid-line-none");
+          break;
+      }
+
+      if (p.whiteSpacePre === false) {
+        $self0.addClass("ui-jqgrid-whitespace-normal");
+      }
+
       $self0.addClass(getGuiStyles("grid", "ui-jqgrid-btable"));
       var hg = (p.caption && p.hiddengrid === true) ? true : false,
         hb = $("<div class='ui-jqgrid-hbox" + (dir === "rtl" ? "-rtl" : "") + "'></div>"),
@@ -5690,7 +5829,7 @@
         if ($pager.length > 0) {
           $pager.css({
             width: grid.width + "px"
-          }).addClass(getGuiStyles("pager", "ui-jqgrid-pager" + " " + bottomClasses)).appendTo(eg);
+          }).addClass(getGuiStyles("pager", "ui-jqgrid-pager")).appendTo(eg);
           if (hg) {
             $pager.hide();
           }
@@ -5748,7 +5887,8 @@
             cSel = feedback.call(ts, "beforeSelectRow", ri, e),
             editingInfo = jgrid.detectRowEditing.call(ts, ri),
             locked = editingInfo != null && editingInfo.mode !== "cellEditing"; // editingInfo.savedRow.ic
-          if (target.tagName === "A" || (locked && !scb)) {
+
+          if (target.tagName === "A" || (locked && !scb) || target.tagName === "I" || $(target).hasClass("checkbox") || ($(target).hasClass("treeclick") && e.which === 1)) {
             return;
           }
           ci = $td[0].cellIndex;
@@ -5822,6 +5962,7 @@
           var self = this,
             gridSelf = self.grid,
             $self = $(this);
+          base.resetSelection.call($self);
           if (p.treeGrid === true) {
             p.datatype = p.treedatatype;
           }
@@ -5853,6 +5994,9 @@
           p.iCol = -1;
           if (p.scroll) {
             grid.emptyRows.call(self, true, false);
+          }
+          if (p.page < 1) {
+            p.page = 1;
           }
           if (opts.page) {
             var page = parseInt(opts.page, 10);
@@ -5912,19 +6056,25 @@
         }
       }
       $(grid.bDiv)
-        .append($("<div style='position:relative;" + (isMSIE7 ? "height:0.01%;" : "") + "'></div>").append("<div></div>").append(ts))
+        .append($("<div style='position:relative;" + (isMSIE7 ? "height:0.01%;" : "") + "'></div>").append(ts))
         .addClass("ui-jqgrid-bdiv")
         .css({
           height: p.height + (isNaN(p.height) ? "" : "px"),
           width: (grid.width) + "px"
         })
         .scroll(grid.scrollGrid);
+
+      if (p.pager) {
+        $(grid.bDiv).css("margin-bottom", "-1px");
+      }
       if (p.maxHeight) {
         $(grid.bDiv).css("max-height", p.maxHeight + (isNaN(p.maxHeight) ? "" : "px"));
       }
       $self0.css({
         width: "1px"
       });
+
+      $(grid.bDiv).append('<div class="ui-jqgrid-nodata"><span class="' + getIcon("other.noDataDisplay") + '"></span><strong>&nbsp; ' + getDef("nodata") + '</strong></div>');
       if (!$.support.tbody) { //IE
         if ($(">tbody", ts).length === 2) {
           $(">tbody:gt(0)", ts).remove();
@@ -5944,17 +6094,9 @@
         showhide = getDef("showhide"),
         arf = p.hidegrid === true ?
         $("<a role='link' class='" + getGuiStyles("titleButton", "ui-jqgrid-titlebar-close") + "'" + (showhide ? " title='" + showhide + "'" : "") + "/>")
-        .hover(
-          function() {
-            arf.addClass(hoverStateClasses);
-          },
-          function() {
-            arf.removeClass(hoverStateClasses);
-          }
-        )
-        .append("<span class='" + visibleGridIcon + "'></span>") :
-        "";
-      $(grid.cDiv).append("<span class='ui-jqgrid-title'>" + p.caption + "</span>")
+        .append("<span class='" + visibleGridIcon + "'></span>") : "",
+        toolbarContainer = "<div class='toolbar-container'><div class='swiper-wrapper'></div></div>";
+      $(grid.cDiv).append("<span class='ui-jqgrid-title'>" + (p.captionicon ? "<span class='" + p.captionicon + "'></span> " : '') + p.caption + "</span>")
         .append(arf)
         .addClass(getGuiStyles("gridTitle", "ui-jqgrid-titlebar ui-jqgrid-caption" + (dir === "rtl" ? "-rtl" : "")));
       $(grid.cDiv).insertBefore(grid.hDiv);
@@ -5968,13 +6110,13 @@
         var toolbarUpperClasses = getGuiStyles("toolbarUpper", "ui-userdata");
         if (p.toolbar[1] === "both") {
           grid.ubDiv = document.createElement("div");
-          $(grid.uDiv).addClass(toolbarUpperClasses).attr("id", "t_" + p.id).insertBefore(grid.hDiv);
-          $(grid.ubDiv).addClass(getGuiStyles("toolbarBottom", "ui-userdata")).attr("id", "tb_" + p.id).insertAfter(grid.hDiv);
+          $(grid.uDiv).addClass(toolbarUpperClasses).attr("id", "t_" + p.id).append(toolbarContainer).insertBefore(grid.hDiv);
+          $(grid.ubDiv).addClass(getGuiStyles("toolbarBottom", "ui-userdata")).attr("id", "tb_" + p.id).append(toolbarContainer).insertAfter(grid.hDiv);
           if (hg) {
             $(grid.ubDiv).hide();
           }
         } else {
-          $(grid.uDiv).width(grid.width).addClass(toolbarUpperClasses).attr("id", "t_" + p.id);
+          $(grid.uDiv).width(grid.width).addClass(toolbarUpperClasses).attr("id", "t_" + p.id).append(toolbarContainer);
         }
         if (hg) {
           $(grid.uDiv).hide();
@@ -6135,6 +6277,14 @@
 
       populate.call(ts);
       p.hiddengrid = false;
+
+      if (p.autoResizable) {
+        var supportsOrientationChange = "onorientationchange" in window,
+          orientationEvent = supportsOrientationChange ? "orientationchange" : "resize";
+        $(window).on(orientationEvent, function() {
+          base.autoResize.call($(ts));
+        });
+      }
     });
   };
   var base = $.fn.jqGrid;
@@ -6178,7 +6328,7 @@
         return "";
       }
       var p = $t.p,
-        guiStyle = p.guiStyle || jgrid.defaults.guiStyle || "jQueryUI";
+        guiStyle = p.guiStyle || jgrid.defaults.guiStyle || "bootstrap";
       return jgrid.mergeCssClasses(jgrid.getRes(jgrid.guiStyles[guiStyle], path), jqClasses || "");
     },
     getGridParam: function(pName) {
@@ -6268,42 +6418,42 @@
       return ids;
     },
     /*selectDeselectRow: function (tr, toSelect, notUpdateParam) {
-    	return this.each(function () {
-    		var $t = this, p = $t.p, rowId = tr.id, iSel, getGuiStyles = base.getGuiStyles,
-    			highlightClass = getGuiStyles.call($($t), "states.select"), frozenRows,
-    			selectUnselectRow = function (tr1, toSelect) {
-    				var method = toSelect ? "addClass" : "removeClass", iColCb = p.iColByName.cb,
-    					attributes = toSelect ?
-    							{ "aria-selected": "true", tabindex: "0" } :
-    							{ "aria-selected": "false", tabindex: "-1" },
-    					selectUnselectRowInTable = function (tr) {
-    						$(tr)[method](highlightClass).attr(attributes);
-    						if (iColCb !== undefined) { // p.multiselect or p.multiselectCheckboxes
-    							$(tr.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", toSelect);
-    						}
-    					};
-    				selectUnselectRowInTable(tr1);
-    				if (frozenRows) {
-    					selectUnselectRowInTable(frozenRows[tr1.rowIndex]);
-    				}
-    			};
-    		if (!$t.grid || !p || rowId === "") { return; }
-    		frozenRows = $t.grid.fbRows;
-    		selectUnselectRow(tr, toSelect);
-    		if (!notUpdateParam) {
-    			iSel = $.inArray(rowId, p.selarrrow);
-    			if (iSel < 0 && toSelect) {
-    				// select
-    				p.selarrrow.push(rowId);
-    				p.selrow = rowId;
-    			} else if (iSel >= 0 && !toSelect) {
-    				// deselect
-    				p.selarrrow.splice(iSel, 1); // remove from array
-    				p.selrow = p.selarrrow.length >= 0 ? p.selarrrow[0] : null;
-    			}
-    		}
-    	});
-    },*/
+     return this.each(function () {
+     var $t = this, p = $t.p, rowId = tr.id, iSel, getGuiStyles = base.getGuiStyles,
+     highlightClass = getGuiStyles.call($($t), "states.select"), frozenRows,
+     selectUnselectRow = function (tr1, toSelect) {
+     var method = toSelect ? "addClass" : "removeClass", iColCb = p.iColByName.cb,
+     attributes = toSelect ?
+     { "aria-selected": "true", tabindex: "0" } :
+     { "aria-selected": "false", tabindex: "-1" },
+     selectUnselectRowInTable = function (tr) {
+     $(tr)[method](highlightClass).attr(attributes);
+     if (iColCb !== undefined) { // p.multiselect or p.multiselectCheckboxes
+     $(tr.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", toSelect);
+     }
+     };
+     selectUnselectRowInTable(tr1);
+     if (frozenRows) {
+     selectUnselectRowInTable(frozenRows[tr1.rowIndex]);
+     }
+     };
+     if (!$t.grid || !p || rowId === "") { return; }
+     frozenRows = $t.grid.fbRows;
+     selectUnselectRow(tr, toSelect);
+     if (!notUpdateParam) {
+     iSel = $.inArray(rowId, p.selarrrow);
+     if (iSel < 0 && toSelect) {
+     // select
+     p.selarrrow.push(rowId);
+     p.selrow = rowId;
+     } else if (iSel >= 0 && !toSelect) {
+     // deselect
+     p.selarrrow.splice(iSel, 1); // remove from array
+     p.selrow = p.selarrrow.length >= 0 ? p.selarrrow[0] : null;
+     }
+     }
+     });
+     },*/
     setSelection: function(selection, onsr, e) {
       return this.each(function() {
         var $t = this,
@@ -6328,7 +6478,7 @@
               selectUnselectRowInTable = function(tr) {
                 $(tr)[method](highlightClass).attr(attributes);
                 if (iColCb !== undefined) { // p.multiselect or p.multiselectCheckboxes
-                  $(tr.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", toSelect);
+                  $(tr.cells[iColCb]).find("input.cbox")[p.propOrAttr]("checked", toSelect);
                 }
               };
             selectUnselectRowInTable(tr1);
@@ -6392,13 +6542,18 @@
                 }
               }
               selectUnselectRow(pt, true);
+              p.selrow = pt.id;
               stat = true;
             } else {
+              p.selrow = null;
               stat = false;
             }
-            p.selrow = pt.id;
+
             if (onsr) {
               feedback.call($t, "onSelectRow", pt.id, stat, e);
+              if (p.toolbar[0]) {
+                $('.selectable', '#t_' + p.id).prop("disabled", !stat);
+              }
             }
           }
         } else {
@@ -6424,8 +6579,25 @@
           }
           if (onsr) {
             feedback.call($t, "onSelectRow", pt.id, stat, e);
+            if (p.toolbar[0]) {
+              $('.selectable', '#t_' + p.id).prop("disabled", !p.selrow);
+            }
           }
         }
+
+        /* GridDetail */
+        if (p.selrow && p.gridDetail.length > 0) {
+          for (var i = 0; i < p.gridDetail.length; i++) {
+            $("#" + p.gridDetail[i].gridId).jqGrid("setGridParam", {
+              postData: {
+                id: p.selrow
+              },
+              parentId: p.selrow
+            }).trigger("reloadGrid");
+            app.removeTabAll(p.gridDetail[i].tabId);
+          }
+        }
+
       });
     },
     resetSelection: function(rowid) {
@@ -6451,13 +6623,13 @@
               };
             $(tr)[method](highlightClass).attr(attributes);
             if (multiselectChechboxes) { // p.multiselect or p.multiselectCheckboxes
-              $(tr.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", false);
+              $(tr.cells[iColCb]).find("input.cbox")[p.propOrAttr]("checked", false);
             }
             if (frozenRows) {
               frozenRow = frozenRows[tr.rowIndex];
               $(frozenRow)[method](highlightClass).attr(attributes);
               if (multiselectChechboxes) { // p.multiselect or p.multiselectCheckboxes
-                $(frozenRow.cells[iColCb]).children("input.cbox")[p.propOrAttr]("checked", false);
+                $(frozenRow.cells[iColCb]).find("input.cbox")[p.propOrAttr]("checked", false);
               }
             }
           };
@@ -6549,7 +6721,7 @@
               if (nm !== "cb" && nm !== "subgrid" && nm !== "rn" && cm.formatter !== "actions" && (!options.skipHidden || !cm.hidden)) {
                 td = $td[i];
                 if (p.treeGrid === true && nm === p.ExpandColumn) {
-                  res[nm] = htmlDecode($("span", td).first().html());
+                  res[nm] = htmlDecode($("span", td).last().html());
                 } else {
                   try {
                     res[nm] = $.unformat.call($t, td, {
@@ -6628,6 +6800,9 @@
           });
         }
         feedback.call($t, "afterDelRow", rowid);
+        if (p.records === 0) { /* && p.treeGrid === false */
+          $(".ui-jqgrid-nodata", "#" + p.gViewId).show();
+        }
       });
       return success;
     },
@@ -6753,7 +6928,8 @@
             getGridRowById = base.getGridRowById,
             colModel = p.colModel,
             lcdata = {}, // cna,
-            additionalProperties = p.additionalProperties;
+            additionalProperties = p.additionalProperties,
+            addProp;
           if (!aradd) {
             if (rowid !== undefined) {
               rowid = String(rowid);
@@ -6806,9 +6982,17 @@
               }
             }
             for (i = 0; i < additionalProperties.length; i++) {
-              v = getAccessor(data, additionalProperties[i]);
-              if (v !== undefined) {
-                lcdata[additionalProperties[i]] = v;
+              addProp = additionalProperties[i];
+              if (addProp !== null && $.isFunction(addProp.convert)) {
+                v = getAccessor(data, addProp.name);
+                if (v !== undefined) {
+                  lcdata[addProp.name] = addProp.convert(v);
+                }
+              } else {
+                v = getAccessor(data, addProp);
+                if (v !== undefined) {
+                  lcdata[addProp] = v;
+                }
               }
             }
 
@@ -6899,6 +7083,14 @@
           t.rebuildRowIndexes(); // we can remove the call later if pos==="last"
           t.updatepager(true, true);
           success = true;
+
+          if (p.records > 0) {
+            $(".ui-jqgrid-nodata", "#" + p.gViewId).hide();
+            $(".ui-jqgrid-bdiv", "#" + p.gViewId).css("-webkit-overflow-scrolling", "touch");
+            base.autoResize.call($self);
+          } else {
+            $(".ui-jqgrid-nodata", "#" + p.gViewId).show();
+          }
         });
       }
       return success;
@@ -7010,7 +7202,7 @@
           }
         });
         if (fndh === true) {
-          base.setGridWidth.call($self, !p.autowidth && (p.widthOrg === undefined || p.widthOrg === "auto" || p.widthOrg === "100%") ? p.tblwidth + parseInt(p.scrollOffset, 10) : p.width);
+          base.setGridWidth.call($self, (!p.autowidth && (p.widthOrg === undefined || p.widthOrg === "auto" || p.widthOrg === "100%") ? p.tblwidth : p.width) + parseInt(p.scrollOffset, 10));
         }
         if (gh) {
           if (p.pivotOptions != null && p.pivotOptions.colHeaders != null && p.pivotOptions.colHeaders.length > 1) {
@@ -7129,7 +7321,8 @@
           totalVariableWidth, fixedColumnsWidth = 0,
           correctur,
           isCellClassHidden = jgrid.isCellClassHidden,
-          newGridWidth = newWidth;
+          newGridWidth = newWidth,
+          resizable = true;
         if (!grid || p == null) {
           return;
         }
@@ -7208,81 +7401,95 @@
           if (numberOfVariableColumns === 0) {
             return;
           }
-          p.tblwidth = parseInt(initialWidth, 10); // round till integer value of px;
-          totalVariableWidth = newGridWidth - borderAndPaddingWidth * numberOfVariableColumns - fixedColumnsWidth;
-          if (!isNaN(p.height)) {
-            if (bDiv.clientHeight < bDiv.scrollHeight || $t.rows.length === 1) {
-              hasScrollbar = true;
-              totalVariableWidth -= scrollbarWidth;
-            }
-          }
-          shrinkFactor = totalVariableWidth / (p.tblwidth - borderAndPaddingWidth * numberOfVariableColumns - fixedColumnsWidth);
-          if (shrinkFactor < 0) {
-            return;
-          }
-          initialWidth = 0;
-          colsExist = cols.length > 0;
-          $.each(colModel, function(i) {
-            if (this.hidden === false && !isCellClassHidden(this.classes) && !this.fixed) {
-              columnWidth = Math.round(this.widthOrg * shrinkFactor);
-              this.width = columnWidth;
-              initialWidth += columnWidth;
-              headers[i].width = columnWidth;
-              hCols[i].style.width = columnWidth + "px";
-              if (p.footerrow) {
-                footers[i].style.width = columnWidth + "px";
-              }
-              if (colsExist) {
-                cols[i].style.width = columnWidth + "px";
-              }
-              iLastVariableColumn = i;
-            }
-          });
 
-          if (!iLastVariableColumn) {
-            return;
+          if (initialWidth > (p.width + 20)) { /* numberOfVariableColumns === 0 || */
+            resizable = false;
           }
 
-          correctur = 0;
-          if (hasScrollbar) {
-            if (newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns) !== scrollbarWidth) {
-              correctur = newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns) - scrollbarWidth;
+          if (resizable === true) {
+            p.tblwidth = parseInt(initialWidth, 10); // round till integer value of px;
+            totalVariableWidth = newGridWidth - borderAndPaddingWidth * numberOfVariableColumns - fixedColumnsWidth;
+            if (!isNaN(p.height)) {
+              if (bDiv.clientHeight < bDiv.scrollHeight || $t.rows.length === 1) {
+                hasScrollbar = true;
+                totalVariableWidth -= scrollbarWidth;
+              }
             }
-          } else if (Math.abs(newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns)) !== 1) {
-            correctur = newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns);
-          }
-          cm = colModel[iLastVariableColumn];
-          cm.width += correctur;
-          p.tblwidth = parseInt(initialWidth + correctur + borderAndPaddingWidth * numberOfVariableColumns + fixedColumnsWidth, 10); // round till integer value of px;
-          if (p.tblwidth > newGridWidth) {
-            delta = p.tblwidth - parseInt(newGridWidth, 10);
-            p.tblwidth = newGridWidth;
-            cm.width = cm.width - delta;
-          }
-          columnWidth = cm.width;
-          thInfo = headers[iLastVariableColumn];
-          thInfo.width = columnWidth;
-          hCols[iLastVariableColumn].style.width = columnWidth + "px";
-          if (colsExist) {
-            cols[iLastVariableColumn].style.width = columnWidth + "px";
-          }
-          if (p.footerrow) {
-            footers[iLastVariableColumn].style.width = columnWidth + "px";
-          }
-          if (p.tblwidth + (hasScrollbar ? scrollbarWidth : 0) < p.width) { // prabably bDiv.offsetWidth - bDiv.clientWidth is better as scw
-            // decrease the width if required
-            setWidthOfAllDivs(p.tblwidth + (hasScrollbar ? scrollbarWidth : 0));
-          }
-          if (bDiv.offsetWidth > bDiv.clientWidth) { // the part seems never work
-            // horizontal scroll bar exist.
-            // we need increase the width of bDiv to fix the problem or to reduce the width of the table
-            // currently we just increase the width
-            if (!p.autowidth && (p.widthOrg === undefined || p.widthOrg === "auto" || p.widthOrg === "100%")) {
-              setWidthOfAllDivs(bDiv.offsetWidth);
+            shrinkFactor = totalVariableWidth / (p.tblwidth - borderAndPaddingWidth * numberOfVariableColumns - fixedColumnsWidth);
+            if (shrinkFactor < 0) {
+              return;
+            }
+            initialWidth = 0;
+            colsExist = cols.length > 0;
+            $.each(colModel, function(i) {
+              if (this.hidden === false && !isCellClassHidden(this.classes) && !this.fixed) {
+                columnWidth = Math.round(this.widthOrg * shrinkFactor);
+                this.width = columnWidth;
+                initialWidth += columnWidth;
+                headers[i].width = columnWidth;
+                hCols[i].style.width = columnWidth + "px";
+                if (p.footerrow) {
+                  footers[i].style.width = columnWidth + "px";
+                }
+                if (colsExist) {
+                  cols[i].style.width = columnWidth + "px";
+                }
+
+                if (this.frozen === true) {
+                  $("th:eq(" + i + ")", $(grid.fhDiv)).css('width', columnWidth + 'px');
+                  $("tr:first td:eq(" + i + ")", $(grid.fbDiv)).css('width', columnWidth + 'px');
+                }
+
+                iLastVariableColumn = i;
+              }
+            });
+
+            if (!iLastVariableColumn) {
+              return;
+            }
+
+            correctur = 0;
+            if (hasScrollbar) {
+              if (newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns) !== scrollbarWidth) {
+                correctur = newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns) - scrollbarWidth;
+              }
+            } else if (Math.abs(newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns)) !== 1) {
+              correctur = newGridWidth - fixedColumnsWidth - (initialWidth + borderAndPaddingWidth * numberOfVariableColumns);
+            }
+            cm = colModel[iLastVariableColumn];
+            cm.width += correctur;
+            p.tblwidth = parseInt(initialWidth + correctur + borderAndPaddingWidth * numberOfVariableColumns + fixedColumnsWidth, 10); // round till integer value of px;
+            if (p.tblwidth > newGridWidth) {
+              delta = p.tblwidth - parseInt(newGridWidth, 10);
+              p.tblwidth = newGridWidth;
+              cm.width = cm.width - delta;
+            }
+            columnWidth = cm.width;
+            thInfo = headers[iLastVariableColumn];
+            thInfo.width = columnWidth;
+            hCols[iLastVariableColumn].style.width = columnWidth + "px";
+            if (colsExist) {
+              cols[iLastVariableColumn].style.width = columnWidth + "px";
+            }
+            if (p.footerrow) {
+              footers[iLastVariableColumn].style.width = columnWidth + "px";
+            }
+            if (p.tblwidth + (hasScrollbar ? scrollbarWidth : 0) < p.width) { // prabably bDiv.offsetWidth - bDiv.clientWidth is better as scw
+              // decrease the width if required
+              setWidthOfAllDivs(p.tblwidth + (hasScrollbar ? scrollbarWidth : 0));
+            }
+            if (bDiv.offsetWidth > bDiv.clientWidth) { // the part seems never work
+              // horizontal scroll bar exist.
+              // we need increase the width of bDiv to fix the problem or to reduce the width of the table
+              // currently we just increase the width
+              if (!p.autowidth && (p.widthOrg === undefined || p.widthOrg === "auto" || p.widthOrg === "100%")) {
+                setWidthOfAllDivs(bDiv.offsetWidth);
+              }
             }
           }
         }
-        if (p.tblwidth) {
+
+        if (p.tblwidth && resizable === true) {
           p.tblwidth = parseInt(p.tblwidth, 10); // round till integer value of px;
           newGridWidth = p.tblwidth;
           //$($t).css("width", newGridWidth + "px");
@@ -7614,6 +7821,7 @@
         p.lastpage = 0;
         p.reccount = 0;
         $t.updatepager(true, false);
+        $(".ui-jqgrid-nodata", "#" + p.gViewId).show();
       });
     },
     getInd: function(rowid, rc) {
@@ -7671,7 +7879,8 @@
                   expanded = !expanded;
                 }
                 if (expanded) {
-                  $(tr).find("div.treeclick").trigger("click");
+                  base.resetSelection.call($self);
+                  $(tr).find("span.treeclick").trigger("click");
                 }
               }
               feedbackKey(stringLeftOrRight, "Key");
@@ -7936,6 +8145,23 @@
         p.autoResizing.fixWidthOnShrink = fixWidthOnShrink;
         p.autoResizing.adjustGridWidth = adjustGridWidth;
         p.shrinkToFit = shrinkToFit;
+      });
+    },
+    autoResize: function() {
+      return this.each(function() {
+        var self = this,
+          $self = $(self),
+          p = self.p,
+          pw, nw;
+        if (!self.grid || p.autoResizable === false) {
+          return;
+        }
+
+        pw = parseInt($(p.gBox).parent().width() - 2);
+        nw = parseInt(pw > p.maxwidth && p.maxwidth > 0 ? p.maxwidth : pw);
+        if (p.width !== nw) {
+          base.setGridWidth.call($self, nw);
+        }
       });
     }
   });

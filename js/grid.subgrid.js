@@ -161,17 +161,23 @@
               $table = $("<table" + (jgrid.msie && jgrid.msiever() < 8 ? " cellspacing='0'" : "") + "><tbody></tbody></table>"),
               $tbody = $($table[0].tBodies[0]),
               $tr = $("<tr></tr>");
-            for (i = 0; i < cm.name.length; i++) {
-              $th = $("<th class='" + thSubgridClasses + "'></th>")
-                .html(cm.name[i])
-                .width(cm.width[i]);
-              $tr.append($th);
+            if (sjxml !== undefined) {
+              for (i = 0; i < cm.name.length; i++) {
+                $th = $("<th class='" + thSubgridClasses + "'></th>")
+                  .html(cm.name[i])
+                  .width(cm.width[i]);
+                $tr.append($th);
+              }
+              $tbody.append($tr);
+              fullBody(sjxml, $tbody);
+              $("#" + jqID(p.id + "_" + sbid)).append($table);
+            } else {
+              $("#" + jqID(p.id + "_" + sbid)).append('<div class="ui-jqgrid-nodata"><span class="' + jgrid.getIconRes(p.iconSet, "other.noDataDisplay") + '"></span><strong>&nbsp; ' + getGridRes.call($(ts), "defaults.nodata") + '</strong></div>');
             }
-            $tbody.append($tr);
-            fullBody(sjxml, $tbody);
-            $("#" + jqID(p.id + "_" + sbid)).append($table);
+
             ts.grid.hDiv.loading = false;
             $("#load_" + jqID(p.id)).hide();
+            base.autoResize.call($(ts));
             return false;
           },
           subGridXml = function(sjxml, sbid) {
@@ -263,6 +269,7 @@
                 }
               } else {
                 $(r).show();
+                base.autoResize.call($(ts));
               }
               $(this).html("<a style='cursor:pointer;'><span class='" + iconClass("minusicon") + "'></span></a>").removeClass("sgcollapsed").addClass("sgexpanded");
               if (p.subGridOptions.selectOnExpand) {
@@ -281,6 +288,8 @@
               if (p.subGridOptions.selectOnCollapse) {
                 $(ts).jqGrid("setSelection", rowid);
               }
+
+              base.autoResize.call($(ts));
             }
             return false;
           },
@@ -288,7 +297,6 @@
           tr,
           $td,
           iRow = 1;
-
         if (!ts.grid) {
           return;
         }
@@ -315,6 +323,7 @@
           $(ts.rows).filter(".jqgrow").each(function(index, row) {
             $(row.cells[0]).click();
           });
+          base.autoResize.call($(ts));
         }
         ts.subGridXml = function(xml, sid) {
           subGridXml(xml, sid);

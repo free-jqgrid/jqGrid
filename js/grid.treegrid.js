@@ -63,11 +63,12 @@
                     base[collapseOrExpand + "Row"].call($self, item, $tr);
                     base[collapseOrExpand + "Node"].call($self, item, $tr);
                   }
+                  base.autoResize.call($self);
                 };
-              if ($target.is("div.treeclick")) {
+              if ($target.is("span.treeclick")) {
                 expendOrCollaps(rowid);
               } else if (p.ExpandColClick) {
-                if ($td.length > 0 && $target.closest("span.ui-jqgrid-cell-wrapper", $td).length > 0) {
+                if ($td.length > 0 && $target.closest("span.cell-wrapper", $td).length > 0) {
                   expendOrCollaps(rowid);
                 }
               }
@@ -151,6 +152,36 @@
             }
           }
         });
+      });
+    },
+    setTreeMoveNode: function() {
+      return this.each(function() {
+        var $t = this,
+          $self = $($t),
+          p = $t.p;
+        if (!$t.grid || !p.treeGrid) {
+          return;
+        }
+
+        var child = [base.getRootNodes.call($self).length],
+          current = [],
+          i, row;
+        for (i = 0; i < this.rows.length; i++) {
+          row = this.rows[i];
+          if ($(row).hasClass("jqgrow")) {
+
+            var nodeParent = base.getNodeParent.call($self, base.getLocalRow.call($self, row.id)),
+              parent = parseInt(nodeParent === null ? 0 : nodeParent._id_);
+
+            if (child[parent] === undefined) {
+              child[parent] = base.getNodeChildren.call($self, nodeParent).length;
+            }
+
+            current[parent] = 1 + (current[parent] ? current[parent] : 0);
+            $("button.move-up", row).prop("disabled", current[parent] === 1 ? true : false);
+            $("button.move-down", row).prop("disabled", current[parent] === child[parent] ? true : false);
+          }
+        }
       });
     },
     expandRow: function(record) {
@@ -462,10 +493,10 @@
             position = p._index[id];
           if (p.treedatatype === "local" || base.isNodeLoaded.call($($t), p.data[position])) {
             rc[expanded] = true;
-            $("div.treeclick", rc1).removeClass(p.treeIcons.plus + " tree-plus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
+            $("span.treeclick", rc1).removeClass(p.treeIcons.plus + " tree-plus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
           } else if (!$t.grid.hDiv.loading) {
             rc[expanded] = true;
-            $("div.treeclick", rc1).removeClass(p.treeIcons.plus + " tree-plus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
+            $("span.treeclick", rc1).removeClass(p.treeIcons.plus + " tree-plus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
             // set the value which will be used during processing of the server response
             // in readInput
             p.treeANode = rc1.rowIndex;
@@ -522,7 +553,7 @@
           }
           rc[expanded] = false;
           var rc1 = $("#" + p.idPrefix + jqID(id), $t.grid.bDiv)[0];
-          $("div.treeclick", rc1).removeClass(p.treeIcons.minus + " tree-minus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.plus + " tree-plus");
+          $("span.treeclick", rc1).removeClass(p.treeIcons.minus + " tree-minus").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.plus + " tree-plus");
           treeGridFeedback.call($t, "afterCollapseNode", {
             rowid: id,
             item: rc
@@ -703,7 +734,7 @@
             $($t.rows[prow])
               .find("span.cell-wrapperleaf").removeClass("cell-wrapperleaf").addClass("cell-wrapper")
               .end()
-              .find("div.tree-leaf").removeClass(p.treeIcons.leaf + " tree-leaf").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
+              .find("span.tree-leaf").removeClass(p.treeIcons.leaf + " tree-leaf").addClass(p.treeIcons.commonIconClass).addClass(p.treeIcons.minus + " tree-minus");
             p.data[parentindex][isLeaf] = false;
             parentdata[loaded] = true;
           }
@@ -746,7 +777,15 @@
             data[left] = maxright;
             data[right] = maxright + 1;
           } else {
-            maxright = parseInt(base.getCol.call($self, right, false, "max"), 10);
+            maxright = 0;
+            var j = p.data.length - 1;
+            if (j >= 0) {
+              while (j >= 0) {
+                maxright = Math.max(maxright, parseInt(p.data[j][right], 10));
+                j--;
+              }
+            }
+            // maxright = parseInt(base.getCol.call($self, right, false, "max"), 10);
             res = jgrid.from.call($t, p.data)
               .greater(left, maxright, {
                 stype: "integer"
@@ -781,11 +820,72 @@
         }
         if (parentdata && !parentdata[expanded] && expandData) {
           $($t.rows[prow])
-            .find("div.treeclick")
+            .find("span.treeclick") /* ToNict */
             .click();
         }
       }
       //});
+    },
+    moveTreeNode: function(nodeid, options) {
+      var $self = $(this),
+        $t = $self[0],
+        p = $t.p,
+        localRow = base.getLocalRow.call($self, nodeid),
+        isNodeLoaded, rows = []; //row/
+
+      $.post(options.url || p.editurl, {
+        oper: 'move',
+        action: options.event,
+        id: nodeid
+      }, function(data) {
+        if (data.status === "error") {
+          alert(data.statusText);
+        } else {
+          isNodeLoaded = base.isNodeLoaded.call($self, localRow);
+
+          switch (p.treeGridModel) {
+            case "nested":
+              while (localRow !== null && localRow.level !== 0) {
+                localRow = base.getNodeParent.call($self, localRow);
+                if (localRow !== null) {
+                  localRow.expanded = false;
+                  rows.push(localRow);
+                }
+              }
+              break;
+            case "adjacency":
+              while (localRow.parent !== null && localRow.parent.toUpperCase() !== "NULL") {
+                localRow = base.getNodeParent.call($self, localRow);
+                localRow.expanded = false;
+                rows.push(localRow);
+              }
+              break;
+          }
+
+          $self.unbind('jqGridLoadComplete.jqGrid');
+          $self.bind('jqGridLoadComplete.jqGrid', function() { /* e, data */
+            if (isNodeLoaded) {
+              $.each(rows, function(index, pos) {
+                base.expandRow.call($self, pos);
+                base.expandNode.call($self, pos);
+              });
+            } else {
+              $.each(rows, function(index, pos) {
+                setTimeout(function() {
+                  var $treeclick = $("span.treeclick", "tr#" + pos._id_, $self);
+                  if ($treeclick.hasClass("tree-plus")) {
+                    $treeclick.trigger('click');
+                  }
+                }, 0);
+              });
+            }
+
+            base.setSelection.call($self, nodeid, true);
+          });
+
+          $($t).trigger("reloadGrid");
+        }
+      }, "json");
     }
   });
   // end module grid.treegrid

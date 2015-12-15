@@ -86,7 +86,7 @@
         }, function(e) {
           var d = e.data,
             p = {},
-            $inputDatePicker, $mainDialog, dnrMainDialog, $alsoResize, dnrAlsoResize,
+            $mainDialog, dnrMainDialog, $alsoResize, dnrAlsoResize,
             getCssProp = function($elem, propertyName) {
               return parseInt($elem.css(propertyName), 10) || false;
             },
@@ -140,12 +140,6 @@
             dnrAlsoResize = false;
           }
           //E.css({opacity:0.8});
-          $inputDatePicker = $mainDialog.find("input.hasDatepicker");
-          if ($inputDatePicker.length > 0) {
-            try {
-              $inputDatePicker.datepicker("hide");
-            } catch (ignore) {}
-          }
           eventData = {
             e: $mainDialog,
             dnr: dnrMainDialog,

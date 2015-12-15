@@ -100,8 +100,8 @@
       resetTitle: "Reset Search Value"
     },
     edit: {
-      addCaption: "เพิ่มข้อมูล",
-      editCaption: "แก้ไขข้อมูล",
+      addCaption: "เพิ่มรายการ",
+      editCaption: "แก้ไขรายการ",
       bSubmit: "บันทึก",
       bCancel: "ยกเลิก",
       bClose: "ปิด",
@@ -122,15 +122,14 @@
         novalue: "ต้องการการคืนค่า!",
         customarray: "ฟังก์ชันที่สร้างขึ้นต้องส่งค่ากลับเป็นแบบแอเรย์",
         customfcheck: "ระบบต้องการฟังก์ชันที่สร้างขึ้นสำหรับการตรวจสอบ!"
-
       }
     },
     view: {
-      caption: "เรียกดูข้อมูล",
+      caption: "เรียกดูรายการ",
       bClose: "ปิด"
     },
     del: {
-      caption: "ลบข้อมูล",
+      caption: "ลบรายการ",
       msg: "คุณต้องการลบข้อมูลที่ถูกเลือก ใช่หรือไม่?",
       bSubmit: "ต้องการลบ",
       bCancel: "ยกเลิก"
@@ -194,8 +193,10 @@
         S: function() {
           return "";
         },
-        srcformat: "Y-m-d",
+        srcformat: "Y-m-d H:i:s",
         newformat: "d/m/Y",
+        isBuddhist: true,
+        /* ToNict */
         masks: {
           ShortDate: "n/j/Y",
           LongDate: "l, F d, Y",
@@ -203,7 +204,8 @@
           MonthDay: "F d",
           ShortTime: "g:i A",
           LongTime: "g:i:s A",
-          YearMonth: "F, Y"
+          YearMonth: "F, Y",
+          DateTime: "d/m/Y H:i:s" /* ToNict */
         }
       }
     }

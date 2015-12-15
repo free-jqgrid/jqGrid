@@ -169,6 +169,9 @@
             }
             elc = jgrid.createEl.call($t, edittype, opt, tmp, true, $.extend({}, jgrid.ajaxOptions, p.ajaxSelectOptions || {}));
             $(elc).addClass("editable");
+            if ($.inArray(edittype, ['text', 'textarea', 'password', 'select']) > -1) {
+              $(elc).addClass("form-control input-sm");
+            }
             $dataFiled.append(elc);
             if (dataWidth) {
               // change the width from auto or the value from editoptions
@@ -179,6 +182,22 @@
             //Again IE
             if (edittype === "select" && editoptions.multiple === true && editoptions.dataUrl === undefined && jgrid.msie) {
               $(elc).width($(elc).width());
+            } else if (edittype === "file") {
+              var elem = document.createElement("input");
+              elem.type = "hidden";
+              elem.id = rowid + "_" + nm;
+              elem.name = nm;
+              elem.value = tmp;
+              $($dataFiled).append(elem);
+
+              var html = '<label class="input-file" for="' + opt.id + '"><div class="input-group input-group-sm"><input type="text" class="form-control input-sm" style="width: 100%; box-sizing: border-box;" readonly>';
+              html += '<span class="input-group-btn"><div class="btn btn-default">Browse</div></span></div></label>';
+
+              $($dataFiled).prepend(html);
+              setTimeout(function() {
+                $("#" + opt.id, $dataFiled).prependTo($(".input-group-btn > .btn", $dataFiled));
+                $("#" + opt.id, $dataFiled).attr('onchange', 'this.closest(\'.input-group\').getElementsByTagName(\'input\')[0].value = this.value;');
+              }, 0);
             }
             if (focus === null) {
               focus = iCol;
@@ -348,6 +367,14 @@
             return;
           }
           v = jgrid.getEditedValue.call($t, $(options.dataElement), cm, !formatter, options.editable);
+
+          if (cm.edittype === "file") {
+            if (v[2] !== undefined) {
+              tmp["File" + cm.name] = v[2];
+            }
+            v = v[1] || v[0];
+          }
+
           cv = jgrid.checkValues.call($t, v, options.iCol);
           if (cv[0] === false) {
             return false;
@@ -448,13 +475,24 @@
             });
           }
 
+          var formData = new FormData();
+          $.each(jgrid.serializeFeedback.call($t,
+            $.isFunction(o.serializeSaveData) ? o.serializeSaveData : p.serializeRowData,
+            "jqGridInlineSerializeSaveData",
+            postData), function(index, value) {
+            formData.append(index, value);
+          });
+
           $.ajax($.extend({
             url: $.isFunction(o.url) ? o.url.call($t, postData[idname], editOrAdd, postData, o) : o.url,
-            data: jgrid.serializeFeedback.call($t,
-              $.isFunction(o.serializeSaveData) ? o.serializeSaveData : p.serializeRowData,
-              "jqGridInlineSerializeSaveData",
-              postData),
+            //data: jgrid.serializeFeedback.call($t,
+            //$.isFunction(o.serializeSaveData) ? o.serializeSaveData : p.serializeRowData,
+            //"jqGridInlineSerializeSaveData",
+            //postData),
             type: $.isFunction(o.mtype) ? o.mtype.call($t, editOrAdd, o, postData[idname], postData) : o.mtype,
+            data: formData,
+            contentType: false,
+            processData: false,
             complete: function(jqXHR, textStatus) {
               $self.jqGrid("progressBar", {
                 method: "hide",
@@ -464,45 +502,52 @@
               // textStatus can be "abort", "timeout", "error", "parsererror" or some text from text part of HTTP error occurs
               // see the answer http://stackoverflow.com/a/3617710/315935 about xhr.readyState === 4 && xhr.status === 0
               if ((jqXHR.status < 300 || jqXHR.status === 304) && (jqXHR.status !== 0 || jqXHR.readyState !== 4)) {
-                var ret, sucret, j;
-                sucret = $self.triggerHandler("jqGridInlineSuccessSaveRow", [jqXHR, rowid, o]);
-                if (!$.isArray(sucret)) {
-                  sucret = [true, tmp];
-                }
-                if (sucret[0] && $.isFunction(o.successfunc)) {
-                  sucret = o.successfunc.call($t, jqXHR);
-                }
-                if ($.isArray(sucret)) {
-                  // expect array - status, data, rowid
-                  ret = sucret[0];
-                  tmp = sucret[1] || tmp;
-                } else {
-                  ret = sucret;
-                }
-                if (ret === true) {
-                  if (p.autoEncodeOnEdit) {
-                    $.each(tmp, function(n, v) {
-                      tmp[n] = jgrid.oldDecodePostedData(v);
-                    });
+                if (textStatus === "success" && (jqXHR.responseJSON === undefined || jqXHR.responseJSON.status !== "error")) {
+                  var ret, sucret, j;
+                  sucret = $self.triggerHandler("jqGridInlineSuccessSaveRow", [jqXHR, rowid, o]);
+                  if (!$.isArray(sucret)) {
+                    sucret = [true, tmp];
                   }
-                  tmp = $.extend({}, tmp, tmp2);
-                  $self.jqGrid("setRowData", rowid, tmp);
-                  $tr.attr("editable", "0");
-                  for (j = 0; j < p.savedRow.length; j++) {
-                    if (String(p.savedRow[j].id) === String(rowid)) {
-                      fr = j;
-                      break;
+                  if (sucret[0] && $.isFunction(o.successfunc)) {
+                    sucret = o.successfunc.call($t, jqXHR);
+                  }
+                  if ($.isArray(sucret)) {
+                    // expect array - status, data, rowid
+                    ret = sucret[0];
+                    tmp = sucret[1] || tmp;
+                  } else {
+                    ret = sucret;
+                  }
+                  if (ret === true) {
+                    if (p.autoEncodeOnEdit) {
+                      $.each(tmp, function(n, v) {
+                        tmp[n] = jgrid.oldDecodePostedData(v);
+                      });
+                    }
+                    tmp = $.extend({}, tmp, tmp2, (jqXHR.responseJSON === undefined ? null : jqXHR.responseJSON.filelist));
+                    $self.jqGrid("setRowData", rowid, tmp);
+                    $tr.attr("editable", "0");
+                    for (j = 0; j < p.savedRow.length; j++) {
+                      if (String(p.savedRow[j].id) === String(rowid)) {
+                        fr = j;
+                        break;
+                      }
+                    }
+                    if (fr >= 0) {
+                      p.savedRow.splice(fr, 1);
+                    }
+                    fullBoolFeedback.call($t, o.aftersavefunc, "jqGridInlineAfterSaveRow", rowid, jqXHR, tmp, o);
+                    $tr.removeClass("jqgrid-new-row").unbind("keydown");
+                  } else {
+                    fullBoolFeedback.call($t, o.errorfunc, "jqGridInlineErrorSaveRow", rowid, jqXHR, textStatus, null, o);
+                    if (o.restoreAfterError === true) {
+                      $self.jqGrid("restoreRow", rowid, o.afterrestorefunc);
                     }
                   }
-                  if (fr >= 0) {
-                    p.savedRow.splice(fr, 1);
-                  }
-                  fullBoolFeedback.call($t, o.aftersavefunc, "jqGridInlineAfterSaveRow", rowid, jqXHR, tmp, o);
-                  $tr.removeClass("jqgrid-new-row").unbind("keydown");
+
                 } else {
-                  fullBoolFeedback.call($t, o.errorfunc, "jqGridInlineErrorSaveRow", rowid, jqXHR, textStatus, null, o);
-                  if (o.restoreAfterError === true) {
-                    $self.jqGrid("restoreRow", rowid, o.afterrestorefunc);
+                  if (jqXHR.responseJSON !== undefined) {
+                    alert(jqXHR.responseJSON.statusText);
                   }
                 }
               }
@@ -574,12 +619,6 @@
           }
         }
         if (fr >= 0) {
-          if ($.isFunction($.fn.datepicker)) {
-            try {
-              $("input.hasDatepicker", "#" + jgrid.jqID(ind.id)).datepicker("hide");
-            } catch (ignore) {}
-          }
-
           $.each(p.colModel, function() {
             var nm = this.name;
             if (p.savedRow[fr].hasOwnProperty(nm)) {

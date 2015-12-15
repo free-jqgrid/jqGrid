@@ -26,18 +26,11 @@
   "use strict";
   var jgrid = $.jgrid;
   // begin module grid.common
-  var getGridRes = jgrid.getMethod("getGridRes"),
-    getGuiStyles = function(path, jqClasses) {
-      var p = this.p,
-        guiStyle = p.guiStyle || jgrid.defaults.guiStyle || "jQueryUI";
-      return jgrid.mergeCssClasses(jgrid.getRes(jgrid.guiStyles[guiStyle], path), jqClasses || "");
-    };
-
+  var getGridRes = jgrid.getMethod("getGridRes");
   jgrid.jqModal = jgrid.jqModal || {};
   $.extend(true, jgrid.jqModal, {
     toTop: true
   });
-
   $.extend(jgrid, {
     // Modal functions
     // The methods showModal and closeModal will be used as callback of $.jqm jQuery plugin defined in jqModal.js
@@ -54,13 +47,13 @@
     //  a: Boolean. It's false initially. It will be set to true during opening and will set to false on closing.
     showModal: function(h) {
       //  w: (jQuery object) The modal element
-      h.w.show();
+      h.w.modal('show');
     },
     closeModal: function(h) {
       //  w: (jQuery object) The modal element
       //  o: (jQuery object) The overlay element
       //  c: (object) The modal's options object
-      h.w.hide().attr("aria-hidden", "true");
+      h.w.modal('hide');
       if (h.o) {
         h.o.remove();
       }
@@ -82,10 +75,7 @@
         }
       }
       if (o.formprop && thisgrid && o.form && $selector.length > 0) {
-        var fh = $selector[0].style.height;
-        if (fh.indexOf("px") > -1) {
-          fh = parseFloat(fh);
-        }
+
         var frmgr, frmdata;
         if (o.form === "edit") {
           frmgr = "#" + jgrid.jqID("FrmGrid_" + o.gb.substr(6));
@@ -95,22 +85,11 @@
           frmdata = "viewProp";
         }
         $(thisgrid).data(frmdata, {
-          top: parseFloat($selector.css("top")),
-          left: parseFloat($selector.css("left")),
-          width: $selector.width(),
-          height: fh,
-          dataheight: $(frmgr).height(),
-          datawidth: $(frmgr).width()
         });
       }
       if ($.fn.jqm && o.jqm === true) {
         $selector.attr("aria-hidden", "true").jqmHide();
       } else {
-        if (o.gb !== "") {
-          try {
-            $(">.jqgrid-overlay", o.gb).first().hide();
-          } catch (ignore) {}
-        }
         $selector.hide().attr("aria-hidden", "true");
       }
       if (o.removemodal) {
@@ -131,49 +110,42 @@
       }
       return [curleft, curtop];
     },
-    createModal: function(aIDs, content, o, insertSelector, posSelector, appendsel, css) {
+    createModal: function(aIDs, content, o, insertSelector, appendsel, css, size) {
       var jqID = jgrid.jqID,
         p = this.p,
         gridjqModal = p != null ? p.jqModal || {} : {};
-      o = $.extend(true, {
-        resizingRightBottomIcon: "ui-icon ui-icon-gripsmall-diagonal-se"
-      }, jgrid.jqModal || {}, gridjqModal, o);
+      o = $.extend(true, jgrid.jqModal || {}, gridjqModal, o);
       // create main window "div.ui-jqdialog", which will contains other components of the modal window:
       // "div.ui-jqdialog-titlebar", "div.ui-jqdialog-content" and optionally resizer like "div.jqResize"
       var mw = document.createElement("div"),
         themodalSelector = "#" + jqID(aIDs.themodal),
-        rtlsup = $(o.gbox).attr("dir") === "rtl" ? true : false,
-        resizeAlso = aIDs.resizeAlso ? "#" + jqID(aIDs.resizeAlso) : false;
+        rtlsup = $(o.gbox).attr("dir") === "rtl" ? true : false;
+
       css = $.extend({}, css || {});
-      mw.className = getGuiStyles.call(this, "dialog.window", "ui-jqdialog");
+      mw.className = "modal fade";
       mw.id = aIDs.themodal;
       mw.dir = rtlsup ? "rtl" : "ltr";
+      mw.tabIndex = "-1";
+      var md = document.createElement('div');
+      md.className = "modal-dialog" + (size ? ' ' + size : '');
+      $(mw).prepend(md);
       // create the title "div.ui-jqdialog-titlebar", which contains:
       // "span.ui-jqdialog-title" with the title text and "a.ui-jqdialog-titlebar-close" with the closing button
       var mh = document.createElement("div");
-      mh.className = getGuiStyles.call(this,
-        "dialog.header",
-        "ui-jqdialog-titlebar " + (rtlsup ? "ui-jqdialog-titlebar-rtl" : "ui-jqdialog-titlebar-ltr"));
+      mh.className = "modal-header " + (rtlsup ? "ui-jqdialog-titlebar-rtl" : "ui-jqdialog-titlebar-ltr");
       mh.id = aIDs.modalhead;
-      $(mh).append("<span class='ui-jqdialog-title'>" + o.caption + "</span>");
-      var hoverClasses = getGuiStyles.call(this, "states.hover"),
-        ahr = $("<a class='ui-jqdialog-titlebar-close ui-corner-all'></a>")
-        .hover(function() {
-            ahr.addClass(hoverClasses);
-          },
-          function() {
-            ahr.removeClass(hoverClasses);
-          })
-        .append("<span class='" + jgrid.getIconRes(p.iconSet, "form.close") + "'></span>");
+
+      var ahr = $("<span class='" + jgrid.getIconRes(p.iconSet, "form.close") + " close' aria-hidden='true' data-dismiss='modal'></span>");
+
       $(mh).append(ahr);
+      $(mh).append("<h4 class='modal-title'>" + o.caption + "</h4>");
       // create "div.ui-jqdialog-content" which hold some HTML content (see input parameter)
       var mc = document.createElement("div");
-      $(mc).addClass(getGuiStyles.call(this, "dialog.content", "ui-jqdialog-content"))
-        .attr("id", aIDs.modalcontent);
+      $(mc).addClass("modal-content").attr("id", aIDs.modalcontent);
       $(mc).append(content);
       // place "div.ui-jqdialog-content" and "div.ui-jqdialog-titlebar" in main window "div.ui-jqdialog"
-      mw.appendChild(mc);
-      $(mw).prepend(mh);
+      md.appendChild(mc);
+      $(mc).prepend(mh);
       // appendsel and insertSelector specifies where the dialog should be placed on the HTML page
       if (appendsel === true) {
         $("body").append(mw); //append as first child in body -for alert dialog
@@ -186,21 +158,8 @@
       if (o.jqModal === undefined) {
         o.jqModal = true;
       } // internal use
-      var coord = {};
-      if ($.fn.jqm && o.jqModal === true) {
-        if (o.left === 0 && o.top === 0 && o.overlay) {
-          var pos = [];
-          pos = jgrid.findPos(posSelector);
-          o.left = pos[0] + 4;
-          o.top = pos[1] + 4;
-        }
-        coord.top = o.top + "px";
-        coord.left = o.left;
-      } else if (o.left !== 0 || o.top !== 0) {
-        coord.left = o.left;
-        coord.top = o.top + "px";
-      }
-      $("a.ui-jqdialog-titlebar-close", mh).click(function() {
+
+      $(mw).on('hide.bs.modal', function() {
         var oncm = $(themodalSelector).data("onClose") || o.onClose;
         var gboxclose = $(themodalSelector).data("gbox") || o.gbox;
         jgrid.hideModal(themodalSelector, {
@@ -211,95 +170,16 @@
           formprop: !o.recreateForm || false,
           form: o.form || ""
         });
-        return false;
       });
-      if (o.width === 0 || !o.width) {
-        o.width = 300;
-      }
-      if (o.height === 0 || !o.height) {
-        o.height = 200;
-      }
-      if (!o.zIndex) {
-        var parentZ = $(insertSelector).parents("*[role=dialog]").first().css("z-index");
-        if (parentZ) {
-          o.zIndex = parseInt(parentZ, 10) + 2;
-          o.toTop = true;
-        } else {
-          o.zIndex = 950;
-        }
-      }
       // ONE NEEDS correction of left position in case of RTL, but the current code places
       // modal dialog OUT OF visible part of/ the window if <body dir="rtl">.
       // Thus first of all the lines are commented. Later the FIXED code below will be included.
       /*var rtlt = 0;
-      if( rtlsup && coord.left && !appendsel) {
-      	rtlt = $(o.gbox).width()- (!isNaN(o.width) ? parseInt(o.width,10) :0) - 8; // to do
-      // just in case
-      	coord.left = parseInt(coord.left,10) + parseInt(rtlt,10);
-      }*/
-      if (coord.left) {
-        coord.left += "px";
-      }
-      $(mw).css($.extend({
-          width: isNaN(o.width) ? "auto" : o.width + "px",
-          height: isNaN(o.height) ? "auto" : o.height + "px",
-          zIndex: o.zIndex,
-          overflow: "hidden"
-        }, coord))
-        .attr({
-          tabIndex: "-1",
-          "role": "dialog",
-          "aria-labelledby": aIDs.modalhead,
-          "aria-hidden": "true"
-        });
-      if (o.drag === undefined) {
-        o.drag = true;
-      }
-      if (o.resize === undefined) {
-        o.resize = true;
-      }
-      if (o.drag) {
-        if ($.fn.jqDrag) {
-          // .ui-draggable .ui-dialog-titlebar {cursor: move}
-          //$(mw).addClass("ui-draggable"); //css("cursor", "move");
-          $(mh).css("cursor", "move");
-          $(mw).jqDrag(mh);
-        } else {
-          try {
-            $(mw).draggable({
-              handle: $("#" + jqID(mh.id))
-            });
-          } catch (ignore) {}
-        }
-      }
-      if (o.resize) {
-        if ($.fn.jqResize) {
-          $(mw).append("<div class='jqResize ui-resizable-handle ui-resizable-se " + o.resizingRightBottomIcon + "'></div>");
-          $(themodalSelector).jqResize(".jqResize", resizeAlso);
-        } else {
-          try {
-            $(mw).resizable({
-              handles: "se, sw",
-              alsoResize: resizeAlso
-            });
-          } catch (ignore) {}
-        }
-      }
-      if (o.closeOnEscape === true) {
-        $(mw).keydown(function(e) {
-          if (e.which === 27) {
-            var cone = $(themodalSelector).data("onClose") || o.onClose;
-            jgrid.hideModal(themodalSelector, {
-              gb: o.gbox,
-              jqm: o.jqModal,
-              onClose: cone,
-              removemodal: o.removemodal || false,
-              formprop: !o.recreateForm || false,
-              form: o.form || ""
-            });
-          }
-        });
-      }
+       if( rtlsup && coord.left && !appendsel) {
+       rtlt = $(o.gbox).width()- (!isNaN(o.width) ? parseInt(o.width,10) :0) - 8; // to do
+       // just in case
+       coord.left = parseInt(coord.left,10) + parseInt(rtlt,10);
+       }*/
     },
     viewModal: function(selector, o) {
       o = $.extend(true, {
@@ -313,6 +193,11 @@
         jqm: true,
         jqM: true
       }, jgrid.jqModal || {}, o || {});
+
+      if (o.caption !== undefined) {
+        $(selector).find(".modal-title").html(o.caption);
+      }
+
       if ($.fn.jqm && o.jqm === true) {
         if (o.jqM) {
           $(selector).attr("aria-hidden", "false").jqm(o).jqmShow();
@@ -334,20 +219,22 @@
       var $t = this,
         p = $t.p,
         gridjqModal = p != null ? p.jqModal || {} : {},
+        ids = {
+          themodal: "infomod" + p.id,
+          modalhead: "infohd" + p.id,
+          modalcontent: "infocnt" + p.id
+        },
+
+        themodalSelector = "#" + jgrid.jqID(ids.themodal),
+
         mopt = $.extend(true, {
-            width: 290,
-            height: "auto",
-            dataheight: "auto",
-            drag: true,
-            resize: false,
-            left: 250,
-            top: 170,
-            zIndex: 1000,
             jqModal: true,
             modal: false,
-            closeOnEscape: true,
-            align: "center",
-            buttonalign: "center",
+            // closeOnEscape: true,
+            align: "left",
+            buttonalign: "right",
+            removemodal: false,
+            onClose: null,
             buttons: []
               // {text:"textbutt", id:"buttid", onClick : function(){...}}
               // if the id is not provided we set it like info_button_+ the index in the array - i.e info_button_0,info_button_1...
@@ -358,13 +245,12 @@
           },
           modalopt || {}),
         jm = mopt.jqModal;
-
       if ($.fn.jqm && !jm) {
         jm = false;
       }
       // in case there is no jqModal
       var buttstr = "",
-        i, hoverClasses = getGuiStyles.call($t, "states.hover");
+        i; //, hoverClasses = getGuiStyles.call($t, "states.hover");
       if (mopt.buttons.length > 0) {
         for (i = 0; i < mopt.buttons.length; i++) {
           if (mopt.buttons[i].id === undefined) {
@@ -373,77 +259,68 @@
           buttstr += jgrid.builderFmButon.call($t, mopt.buttons[i].id, mopt.buttons[i].text);
         }
       }
-      var dh = isNaN(mopt.dataheight) ? mopt.dataheight : mopt.dataheight + "px",
-        cn = "text-align:" + mopt.align + ";",
-        cnt = "<div id='info_id'>";
-      cnt += "<div id='infocnt' style='margin:0px;padding-bottom:1em;width:100%;overflow:auto;position:relative;height:" + dh + ";" + cn + "'>" + content + "</div>";
-      if (closeButtonText || buttstr !== "") {
-        cnt += "<hr class='" + getGuiStyles.call($t, "dialog.hr") + "' style='margin:1px'/><div style='text-align:" + mopt.buttonalign +
-          ";padding:.8em 0 .5em 0;background-image:none;border-width: 1px 0 0 0;'>" +
-          (closeButtonText ? jgrid.builderFmButon.call($t, "closedialog", closeButtonText) : "") + buttstr + "</div>";
-      }
-      cnt += "</div>";
 
-      try {
-        if ($("#info_dialog").attr("aria-hidden") === "false") {
-          jgrid.hideModal("#info_dialog", {
-            jqm: jm
-          });
-        }
-        $("#info_dialog").remove();
-      } catch (ignore) {}
-      jgrid.createModal.call($t, {
-          themodal: "info_dialog",
-          modalhead: "info_head",
-          modalcontent: "info_content",
-          resizeAlso: "infocnt"
-        },
-        cnt,
-        mopt,
-        "", "", true);
-      // attach onclick after inserting into the dom
-      if (buttstr) {
-        $.each(mopt.buttons, function(j) {
-          $("#" + jgrid.jqID($t.id), "#info_id").bind("click", function() {
-            mopt.buttons[j].onClick.call($("#info_dialog"));
-            return false;
-          });
-        });
-      }
-      $("#closedialog", "#info_id").click(function() {
-        jgrid.hideModal("#info_dialog", {
-          jqm: jm,
-          onClose: $("#info_dialog").data("onClose") || mopt.onClose,
-          gb: $("#info_dialog").data("gbox") || mopt.gbox
-        });
-        return false;
-      });
-      $(".fm-button", "#info_dialog").hover(
-        function() {
-          $(this).addClass(hoverClasses);
-        },
-        function() {
-          $(this).removeClass(hoverClasses);
-        }
-      );
       if ($.isFunction(mopt.beforeOpen)) {
         mopt.beforeOpen();
       }
-      jgrid.viewModal("#info_dialog", {
-        onHide: function(h) {
-          h.w.hide().remove();
-          if (h.o) {
-            h.o.remove();
+
+      var cn = "text-align:" + mopt.align + ";";
+
+      if ($(themodalSelector).length === 0) {
+
+        var cnt = "<div class='modal-body'>";
+        cnt += "<div class='infocnt' style='" + cn + "'>" + content + "</div>";
+        cnt += "</div>";
+        if (closeButtonText || buttstr !== "") {
+          cnt += "<div class='modal-footer' style='text-align:" + mopt.buttonalign + "'>" +
+            (closeButtonText ? jgrid.builderFmButon.call($t, "closedialog", closeButtonText) : "") + buttstr + "</div>";
+        }
+
+        jgrid.createModal.call($t, {
+          themodal: ids.themodal,
+          modalhead: ids.modalhead,
+          modalcontent: ids.modalcontent
+        }, cnt, mopt, p.gView);
+        // attach onclick after inserting into the dom
+        if (buttstr) {
+          $.each(mopt.buttons, function(j) {
+            $("#" + jgrid.jqID($t.id), themodalSelector).bind("click", function() {
+              mopt.buttons[j].onClick.call($("#info_dialog"));
+              return false;
+            });
+          });
+        }
+        $("#closedialog", themodalSelector).click(function() {
+          jgrid.hideModal(themodalSelector, {
+            gb: p.gBox,
+            jqm: jm,
+            onClose: mopt.onClose,
+            removemodal: mopt.removemodal
+          });
+          return false;
+        });
+      } else {
+        var addinfocnt = true;
+        $(".infocnt", themodalSelector).each(function() {
+          if ($(this).text() === content) {
+            addinfocnt = false;
           }
-        },
+        });
+        if (addinfocnt === true) {
+          $(".modal-body", themodalSelector).empty().append("<div class='infocnt' style='" + cn + "'>" + content + "</div>");
+        }
+      }
+
+      jgrid.viewModal(themodalSelector, {
         modal: mopt.modal,
         jqm: jm
       });
       if ($.isFunction(mopt.afterOpen)) {
         mopt.afterOpen();
       }
+
       try {
-        $("#info_dialog").focus();
+        $(themodalSelector).focus();
       } catch (ignore) {}
     },
     bindEv: function(el, opt) {
@@ -475,8 +352,19 @@
         editMsg = edit.msg,
         bClose = edit.bClose;
 
+      var i, so, sv, ov, oSv, key, optionInfos = [],
+        optionInfo,
+        sep = options.separator === undefined ? ":" : options.separator,
+        delim = options.delimiter === undefined ? ";" : options.delimiter,
+        emptyOptionText = options.emptyOptionText ? options.emptyOptionText : getRes("defaults.pleaseSelect"),
+        mapFunc = function(n, ii) {
+          if (ii > 0) {
+            return n;
+          }
+        };
+
       function setAttributes(elm, atr, exl) {
-        var exclude = ["dataInit", "dataEvents", "dataUrl", "buildSelect", "sopt", "searchhidden", "defaultValue", "attr", "custom_element", "custom_value", "selectFilled", "rowId", "mode"];
+        var exclude = ["dataInit", "dataEvents", "dataUrl", "buildSelect", "sopt", "searchhidden", "defaultValue", "attr", "custom_element", "custom_value", "selectFilled", "rowId", "mode", "oper", "maxitems", "url", "path", "emptyOptionText"];
         if (exl !== undefined && $.isArray(exl)) {
           $.merge(exclude, exl);
         }
@@ -524,9 +412,9 @@
               elem.defaultChecked = true;
               elem.value = vl;
             } else {
-              elem.value = "on";
+              elem.value = "T";
             }
-            $(elem).data("offval", "off");
+            $(elem).data("offval", "F");
           } else {
             var cbval = options.value.split(":");
             if (vl === cbval[0]) {
@@ -542,7 +430,58 @@
             "aria-checked": elem.checked ? "true" : "false"
           });
           break;
+        case "radio":
+          elem = document.createElement("div");
+          elem.type = 'radio';
+          if (options.value) {
+            if (typeof options.value === "function") {
+              options.value = options.value();
+            }
+            if (typeof options.value === "string") {
+              so = options.value.split(delim);
+              for (i = 0; i < so.length; i++) {
+                sv = so[i].split(sep);
+                if (sv.length > 2) {
+                  sv[1] = $.map(sv, mapFunc).join(sep);
+                }
+
+                optionInfos.push({
+                  value: sv[0],
+                  innerHtml: sv[1]
+                });
+              }
+            } else if (typeof options.value === "object") {
+              oSv = options.value;
+              for (key in oSv) {
+                if (oSv.hasOwnProperty(key)) {
+                  optionInfos.push({
+                    value: key,
+                    innerHtml: oSv[key]
+                  });
+                }
+              }
+            }
+
+            for (i = 0; i < optionInfos.length; i++) {
+              optionInfo = optionInfos[i];
+              var label = $("<label class='radio-inline'></label>"),
+                radioButton = document.createElement("input");
+              setAttributes(radioButton, options, ["value", "id"]);
+              radioButton.type = 'radio';
+              radioButton.value = optionInfo.value;
+              if (optionInfo.value === vl) {
+                radioButton.checked = true;
+              } else {
+                radioButton.checked = false;
+              }
+
+              $(elem).append(label.append(radioButton).append(optionInfo.innerHtml));
+            }
+          }
+
+          break;
         case "select":
+        case "select2":
           elem = document.createElement("select");
           var msl, ovm = [],
             iCol = p.iColByName[options.name],
@@ -576,14 +515,13 @@
             try {
               rowid = options.rowId;
             } catch (ignore) {}
-
             if (p && p.idPrefix) {
               rowid = jgrid.stripPref(p.idPrefix, rowid);
             }
             $.ajax($.extend({
               url: $.isFunction(options.dataUrl) ? options.dataUrl.call($t, rowid, vl, String(options.name), ajaxContext) : options.dataUrl,
               type: "GET",
-              dataType: "html",
+              dataType: "json",
               data: $.isFunction(postData) ? postData.call($t, rowid, vl, String(options.name)) : postData,
               context: ajaxContext,
               success: function(data, textStatus, jqXHR) {
@@ -593,8 +531,13 @@
                   iCol1 = this.iCol,
                   options1 = $.extend({}, this.options),
                   a = $.isFunction(options1.buildSelect) ? options1.buildSelect.call($t, data, jqXHR, cm1, iCol1) : data;
-                if (typeof a === "string") {
-                  a = $($.trim(a)).html();
+                if (typeof a === 'object') {
+                  var sel = '<select>';
+                  $.each(a, function(value, label) {
+                    sel += '<option value="' + value + '">' + label + "</option>";
+                  });
+                  sel += '</select>';
+                  a = $($.trim(sel)).html();
                 }
                 if (a) {
                   //$(elem1).empty(); // ???
@@ -635,15 +578,6 @@
             if (typeof options.value === "function") {
               options.value = options.value();
             }
-            var i, so, sv, ov, optionInfos = [],
-              optionInfo,
-              sep = options.separator === undefined ? ":" : options.separator,
-              delim = options.delimiter === undefined ? ";" : options.delimiter,
-              mapFunc = function(n, ii) {
-                if (ii > 0) {
-                  return n;
-                }
-              };
             if (typeof options.value === "string") {
               so = options.value.split(delim);
               for (i = 0; i < so.length; i++) {
@@ -651,6 +585,14 @@
                 if (sv.length > 2) {
                   sv[1] = $.map(sv, mapFunc).join(sep);
                 }
+
+                if (i === 0 && sv[0] !== '') {
+                  optionInfos.push({
+                    value: '',
+                    innerHtml: emptyOptionText
+                  });
+                }
+
                 optionInfos.push({
                   value: sv[0],
                   innerHtml: sv[1],
@@ -659,8 +601,14 @@
                 });
               }
             } else if (typeof options.value === "object") {
-              var oSv = options.value,
-                key;
+              oSv = options.value;
+              if (oSv[0] !== '') {
+                optionInfos.push({
+                  value: '',
+                  innerHtml: emptyOptionText
+                });
+              }
+
               for (key in oSv) {
                 if (oSv.hasOwnProperty(key)) {
                   optionInfos.push({
@@ -736,9 +684,28 @@
           $(elem).attr("role", role);
           break;
         case "image":
+          elem = document.createElement("input");
+          elem.type = eltype;
+          setAttributes(elem, options);
+          break;
         case "file":
           elem = document.createElement("input");
           elem.type = eltype;
+          options.name = "File" + options.name;
+          options.id = "File" + options.id;
+          setAttributes(elem, options);
+          $(elem).css({
+            display: "none"
+          });
+          break;
+        case "autocomplete":
+          elem = document.createElement("select");
+          setAttributes(elem, options);
+          break;
+        case "datepicker":
+        case "datetimepicker":
+          elem = document.createElement("input");
+          elem.type = 'text';
           setAttributes(elem, options);
           break;
         case "custom":
@@ -850,7 +817,7 @@
       return true;
     },
     isEmpty: function(val) {
-      if (val.match(/^\s+$/) || val === "") {
+      if (val === undefined || val.match(/^\s+$/) || val === "") {
         return true;
       }
       return false;
@@ -910,26 +877,26 @@
         }
         if (edtrul.required === true) {
           if (isEmpty(val)) {
-            return [false, nm + ": " + editMsg.required, ""];
+            return [false, nm + " : " + editMsg.required, ""];
           }
         }
         // force required
-        var rqfield = edtrul.required === false ? false : true;
+        var rqfield = edtrul.required === true ? true : false;
         if (edtrul.number === true) {
           if (!(rqfield === false && isEmpty(val))) {
             if (isNaN(val)) {
-              return [false, nm + ": " + editMsg.number, ""];
+              return [false, nm + " : " + editMsg.number, ""];
             }
           }
         }
         if (edtrul.minValue !== undefined && !isNaN(edtrul.minValue)) {
           if (parseFloat(val) < parseFloat(edtrul.minValue)) {
-            return [false, nm + ": " + editMsg.minValue + " " + edtrul.minValue, ""];
+            return [false, nm + " : " + editMsg.minValue + " " + edtrul.minValue, ""];
           }
         }
         if (edtrul.maxValue !== undefined && !isNaN(edtrul.maxValue)) {
           if (parseFloat(val) > parseFloat(edtrul.maxValue)) {
-            return [false, nm + ": " + editMsg.maxValue + " " + edtrul.maxValue, ""];
+            return [false, nm + " : " + editMsg.maxValue + " " + edtrul.maxValue, ""];
           }
         }
         var filter;
@@ -938,17 +905,17 @@
             // taken from $ Validate plugin
             filter = /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i;
             if (!filter.test(val)) {
-              return [false, nm + ": " + editMsg.email, ""];
+              return [false, nm + " : " + editMsg.email, ""];
             }
           }
         }
         if (edtrul.integer === true) {
           if (!(rqfield === false && isEmpty(val))) {
             if (isNaN(val)) {
-              return [false, nm + ": " + editMsg.integer, ""];
+              return [false, nm + " : " + editMsg.integer, ""];
             }
             if ((val % 1 !== 0) || (val.indexOf(".") !== -1)) {
-              return [false, nm + ": " + editMsg.integer, ""];
+              return [false, nm + " : " + editMsg.integer, ""];
             }
           }
         }
@@ -963,7 +930,7 @@
               dft = colModel[valref].datefmt || "Y-m-d";
             }
             if (!jgrid.checkDate(dft, val)) {
-              return [false, nm + ": " + editMsg.date + " - " + dft, ""];
+              return [false, nm + " : " + editMsg.date + " - " + dft, ""];
             }
           }
         }
@@ -978,7 +945,7 @@
           if (!(rqfield === false && isEmpty(val))) {
             filter = /^(((https?)|(ftp)):\/\/([\-\w]+\.)+\w{2,3}(\/[%\-\w]+(\.\w{2,})?)*(([\w\-\.\?\\\/+@&#;`~=%!]*)(\.\w{2,})?)*\/?)/i;
             if (!filter.test(val)) {
-              return [false, nm + ": " + editMsg.url, ""];
+              return [false, nm + " : " + editMsg.url, ""];
             }
           }
         }

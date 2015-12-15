@@ -36,7 +36,7 @@
         return; //Adedd by Tony Tomov
       }
       // This is a small "hack" to make the width of the jqGrid 100%
-      $self.width("99%");
+      // $self.width("99%");
       w = $self.width();
 
       // Text whether we have single or multi select

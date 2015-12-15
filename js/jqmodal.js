@@ -108,7 +108,7 @@
     var p = {
       overlay: 50,
       closeoverlay: false,
-      overlayClass: "jqmOverlay",
+      overlayClass: "",
       closeClass: "jqmClose",
       trigger: ".jqModal",
       ajax: false,
@@ -168,26 +168,13 @@
       var h = jqmHash[s],
         $overlay, target, url,
         options = h.c,
-        parentOffset = h.w.parent().offset(),
-        left, top,
-        cc = "." + options.closeClass,
-        z = (parseInt(h.w.css("z-index"), 10));
-      z = (z > 0) ? z : 3000;
-      $overlay = $("<div></div>").css({
-        height: "100%",
-        width: "100%",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        "z-index": z - 1,
-        opacity: options.overlay / 100
-      });
+        cc = "." + options.closeClass;
+      $overlay = $("<div></div>");
       if (h.a) {
         return false;
       }
       h.t = trigger;
       h.a = true;
-      h.w.css("z-index", z);
       if (options.modal) {
         if (!createdModals[0]) {
           setTimeout(function() {
@@ -195,15 +182,7 @@
           }, 1);
         }
         createdModals.push(s);
-      } else if (options.overlay > 0) {
-        if (options.closeoverlay) {
-          h.w.jqmAddClose($overlay);
-        }
-      } else {
-        $overlay = false;
       }
-
-      h.o = $overlay ? $overlay.addClass(options.overlayClass).prependTo("body") : false;
 
       if (options.ajax) {
         target = options.target || h.w;
@@ -224,17 +203,6 @@
         h.w.jqmAddClose($(cc, h.w));
       }
 
-      if (options.toTop && h.o) {
-        parentOffset = h.w.parent().offset();
-        left = parseFloat(h.w.css("left") || 0);
-        top = parseFloat(h.w.css("top") || 0);
-        h.w.before('<span id="jqmP' + h.w[0]._jqm + '"></span>')
-          .insertAfter(h.o);
-        h.w.css({
-          top: parentOffset.top + top,
-          left: parentOffset.left + left
-        });
-      }
       if (options.onShow) {
         options.onShow(h);
       } else {
