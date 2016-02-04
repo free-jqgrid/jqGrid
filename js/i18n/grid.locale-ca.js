@@ -14,7 +14,19 @@
 
 /*jslint white: true */
 /*global jQuery */
-(function ($) {
+(function (factory) {
+	"use strict";
+	if (typeof define === "function" && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(["jquery"], factory);
+	} else if (typeof exports === "object") {
+		// Node/CommonJS
+		factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory(jQuery);
+	}
+}(function ($) {
 "use strict";
 var locInfo = {
 	isRTL: false,
@@ -57,6 +69,10 @@ var locInfo = {
 			{ op: "AND", text: "tot" },
 			{ op: "OR",  text: "qualsevol" }
 		],
+		addGroupTitle: "Add subgroup",
+		deleteGroupTitle: "Delete group",
+		addRuleTitle: "Add rule",
+		deleteRuleTitle: "Delete rule",
 		operandTitle: "Clic per escollir la operació de cerca.",
 		resetTitle: "Reiniciar valors de la cerca"
 	},
@@ -109,7 +125,11 @@ var locInfo = {
 		alertcap: "Avís",
 		alerttext: "Seleccioni una fila",
 		viewtext: "",
-		viewtitle: "Veure fila seleccionada"
+		viewtitle: "Veure fila seleccionada",
+		savetext: "",
+		savetitle: "Save row",
+		canceltext: "",
+		canceltitle: "Cancel row editing"
 	},
 	// setcolumns module
 	col: {
@@ -169,4 +189,4 @@ $.extend(true, $.jgrid, {
 		"ca-ES": $.extend({}, locInfo, { name: "català (català)", nameEnglish: "Catalan (Catalan)" })
 	}
 });
-}(jQuery));
+}));
