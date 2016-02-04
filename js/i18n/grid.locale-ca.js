@@ -32,7 +32,7 @@ var locInfo = {
 	isRTL: false,
 	defaults: {
 		recordtext: "Mostrant {0} - {1} de {2}",
-		emptyrecords: "Sense registres a mostrar",
+		emptyrecords: "Sense registres per mostrar",
 		loadtext: "Carregant...",
 		pgtext: "Pàgina {0} de {1}",
 		pgfirst: "Primera pàgina",
@@ -69,10 +69,10 @@ var locInfo = {
 			{ op: "AND", text: "tot" },
 			{ op: "OR",  text: "qualsevol" }
 		],
-		addGroupTitle: "Add subgroup",
-		deleteGroupTitle: "Delete group",
-		addRuleTitle: "Add rule",
-		deleteRuleTitle: "Delete rule",
+		addGroupTitle: "Crear subgrup",
+		deleteGroupTitle: "Eliminar grup",
+		addRuleTitle: "Crear regla",
+		deleteRuleTitle: "Eliminar regla",
 		operandTitle: "Clic per escollir la operació de cerca.",
 		resetTitle: "Reiniciar valors de la cerca"
 	},
@@ -127,9 +127,9 @@ var locInfo = {
 		viewtext: "",
 		viewtitle: "Veure fila seleccionada",
 		savetext: "",
-		savetitle: "Save row",
+		savetitle: "Guardar fila",
 		canceltext: "",
-		canceltitle: "Cancel row editing"
+		canceltitle: "Cancel·lar edició de la fila"
 	},
 	// setcolumns module
 	col: {

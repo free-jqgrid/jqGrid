@@ -70,10 +70,10 @@ var locInfo = {
 			{ op: "AND", text: "todo" },
 			{ op: "OR",  text: "cualquier" }
 		],
-		addGroupTitle: "Add subgroup",
-		deleteGroupTitle: "Delete group",
-		addRuleTitle: "Add rule",
-		deleteRuleTitle: "Delete rule",
+		addGroupTitle: "Crear subgrupo",
+		deleteGroupTitle: "Eliminar grupo",
+		addRuleTitle: "Crear regla",
+		deleteRuleTitle: "Eliminar regla",
 		operandTitle: "Clic para seleccionar la operación de búsqueda.",
 		resetTitle: "Reiniciar valor de búsqueda"
 	},
@@ -139,7 +139,7 @@ var locInfo = {
 	},
 	errors: {
 		errcap: "Error",
-		nourl: "No se ha especificado una URL",
+		nourl: "No se ha especificado ninguna URL",
 		norecords: "No hay datos para procesar",
 		model: "Las columnas de nombres son diferentes de las columnas de modelo"
 	},
