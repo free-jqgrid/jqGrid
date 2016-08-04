@@ -1247,11 +1247,11 @@
 			}
 			switch (componentName) {
 				case COMPONENT_NAMES.BODY_TABLE: // get body table from bDiv
-					return $p.hasClass("ui-jqgrid-bdiv") ? $p.find(">div>.ui-jqgrid-btable") : $();
-				case COMPONENT_NAMES.HEADER_TABLE: // header table from bDiv
-					return $p.hasClass("ui-jqgrid-hdiv") ? $p.find(">div>.ui-jqgrid-htable") : $();
-				case COMPONENT_NAMES.FOOTER_TABLE: // footer/summary table from sDiv
-					return $p.hasClass("ui-jqgrid-sdiv") ? $p.find(">div>.ui-jqgrid-ftable") : $();
+	                    		return $p.hasClass("ui-jqgrid-bdiv") ? $p.find(".ui-jqgrid-btable") : $();
+	                	case COMPONENT_NAMES.HEADER_TABLE: // header table from bDiv
+	                    		return $p.hasClass("ui-jqgrid-hdiv") ? $p.find(".ui-jqgrid-htable") : $();
+	                	case COMPONENT_NAMES.FOOTER_TABLE: // footer/summary table from sDiv
+	                    		return $p.hasClass("ui-jqgrid-sdiv") ? $p.find(".ui-jqgrid-ftable") : $();
 				case COMPONENT_NAMES.FROZEN_HEADER_TABLE: // header table from bDiv
 					return $p.hasClass("ui-jqgrid-hdiv") ? $p.children(".ui-jqgrid-htable") : $();
 				case COMPONENT_NAMES.FROZEN_FOOTER_TABLE: // footer/summary table from sDiv
