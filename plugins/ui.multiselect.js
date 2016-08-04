@@ -291,6 +291,10 @@ $.widget("ui.multiselect", {
 		var that = this;
 		elements.click(function() {
 			var item = that._setSelected($(this).parent(), true);
+			 that.selectedList.find('li').each(function () {
+			        if ($(this).data('optionLink'))
+			            $(this).data('optionLink').remove().appendTo(that.element);
+			  });
 			that.count += 1;
 			that._updateCount();
 			return false;
