@@ -5399,11 +5399,13 @@
 						frozenRows = grid.fbRows,
 						skipClasses = disabledStateClasses + " ui-subgrid jqgroup jqfoot jqgfirstrow jqgskipselect",
 						id, ids = p._index;
-					clearArray(p.selarrrow); // p.selarrrow = [];
+					if (!p.multiPageSelection) {
+						clearArray(p.selarrrow); // p.selarrrow = [];
+					}
 					if (this.checked) {
 						toCheck = true;
 						p.selrow = ts.rows.length > 1 ? ts.rows[ts.rows.length - 1].id : null;
-						if (p.multiPageSelection && (p.datatype === "local" || p.treeGrid)) {
+						if (p.multiPageSelection) {
 							if (p.data != null && p.data.length > 0 && ids != null) {
 								// add to selarrrow all
 								for (id in ids) {
@@ -5415,7 +5417,14 @@
 						}
 					} else {
 						toCheck = false;
-						p.selrow = null;
+						if (p.multiPageSelection) {
+							$(ts.rows).each(function () {
+								var idx = p.selarrrow.indexOf(p.idPrefix + this.id);
+								idx >= 0 && p.selarrrow.splice(idx, 1);
+							});
+						} else {
+							p.selrow = null;
+						}
 					}
 					var selArr = toCheck ? p.selarrrow : emp;
 					$(ts.rows).each(function (i) {
@@ -6465,6 +6474,13 @@
 						feedback.call($t, "onSelectRow", pt.id, stat, e || {});
 					}
 				}
+			});
+		},
+		resetAllSelection:function(){
+			this.resetSelection();
+			return this.each(function () {
+				var $t = this, $self = $($t), p = $t.p;
+				clearArray(p.selarrrow); // p.selarrrow = [];
 			});
 		},
 		resetSelection: function (rowid) {
