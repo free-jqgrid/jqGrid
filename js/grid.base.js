@@ -3595,7 +3595,7 @@
 							if (p.deepempty) {
 								if (tableRows) { $(tableRows).slice(1).remove(); }
 							} else if (p.quickEmpty) {
-								if (p.quickEmpty === "quickest") {
+								if (p.quickEmpty === "quickest" && !$(table.tBodies[0]).data("ui-sortable")) {
 									table.replaceChild(document.createElement("tbody"), table.tBodies[0]);
 									table.firstChild.appendChild(firstrow);
 								} else {
