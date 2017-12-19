@@ -5899,6 +5899,7 @@
 				})
 				.on("reloadGrid", function (e, opts) {
 					var self = this, gridSelf = self.grid, $self = $(this);
+					p = self.p; 
 					if (p.treeGrid === true) {
 						p.datatype = p.treedatatype;
 					}
