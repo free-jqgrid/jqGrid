@@ -5898,7 +5898,7 @@
 					// the usage of return false break checking/uchecking
 				})
 				.on("reloadGrid", function (e, opts) {
-					var self = this, gridSelf = self.grid, $self = $(this);
+					var self = this, p = self.p, gridSelf = self.grid, $self = $(this);
 					if (p.treeGrid === true) {
 						p.datatype = p.treedatatype;
 					}
