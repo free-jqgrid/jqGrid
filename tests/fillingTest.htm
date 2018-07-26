@@ -32,18 +32,18 @@
     $(function () {
         "use strict";
         var mydata = [
-                { id: "11",  invdate: "2007-10-01", name: "test",   note: "note",   amount: 0, tax: 0, closed: true,  ship_via: "TN", total: 0 },
-                { id: "21",  invdate: "2007-10-02", name: "test2",  note: "note2",  amount: 351.75, tax: 23.45, closed: false, ship_via: "FE", total: 375.2 },
-                { id: "31",  invdate: "2007-09-01", name: "test3",  note: "note3",  amount: 400, tax: 30, closed: false, ship_via: "FE", total: 430 },
-                { id: "41",  invdate: "2007-10-04", name: "test4",  note: "note4",  amount: 200, tax: 10, closed: true,  ship_via: "TN", total: 210 },
-                { id: "51",  invdate: "2007-10-31", name: "test5",  note: "note5",  amount: 300, tax: 20, closed: false, ship_via: "FE", total: 320 },
-                { id: "61",  invdate: "2007-09-06", name: "test6",  note: "note6",  amount: 400, tax: 30, closed: false, ship_via: "FE", total: 430 },
-                { id: "71",  invdate: "2007-10-04", name: "test7",  note: "note7",  amount: 200, tax: 10, closed: true,  ship_via: "TN", total: 210 },
-                { id: "81",  invdate: "2007-10-03", name: "test8",  note: "note8",  amount: 300, tax: 20, closed: false, ship_via: "FE", total: 320 },
-                { id: "91",  invdate: "2007-09-01", name: "test9",  note: "note9",  amount: 400, tax: 30, closed: false, ship_via: "TN", total: 430 },
-                { id: "101", invdate: "2007-09-08", name: "test10", note: "note10", amount: 500, tax: 30, closed: true,  ship_via: "TN", total: 530 },
-                { id: "111", invdate: "2007-09-08", name: "test11", note: "note11", amount: 500, tax: 30, closed: false, ship_via: "FE", total: 530 },
-                { id: "121", invdate: "2007-09-10", name: "test12", note: "note12", amount: 500, tax: 30, closed: false, ship_via: "FE", total: 530 }
+                { id: "11",  invdate_1: "2007-10-01",  invdate_2: "2007-10-01", name: "test",   note: "note",   amount: 0, tax: 0, closed: true,  ship_via: "TN", total: 0 },
+                { id: "21",  invdate_1: "2007-10-02",  invdate_2: "2007-10-02", name: "test2",  note: "note2",  amount: 351.75, tax: 23.45, closed: false, ship_via: "FE", total: 375.2 },
+                { id: "31",  invdate_1: "2007-09-01",  invdate_2: "2007-09-01", name: "test3",  note: "note3",  amount: 400, tax: 30, closed: false, ship_via: "FE", total: 430 },
+                { id: "41",  invdate_1: "2007-10-04",  invdate_2: "2007-10-04", name: "test4",  note: "note4",  amount: 200, tax: 10, closed: true,  ship_via: "TN", total: 210 },
+                { id: "51",  invdate_1: "2007-10-31",  invdate_2: "2007-10-31", name: "test5",  note: "note5",  amount: 300, tax: 20, closed: false, ship_via: "FE", total: 320 },
+                { id: "61",  invdate_1: "2007-09-06",  invdate_2: "2007-09-06", name: "test6",  note: "note6",  amount: 400, tax: 30, closed: false, ship_via: "FE", total: 430 },
+                { id: "71",  invdate_1: "2007-10-04",  invdate_2: "2007-10-04", name: "test7",  note: "note7",  amount: 200, tax: 10, closed: true,  ship_via: "TN", total: 210 },
+                { id: "81",  invdate_1: "2007-10-03",  invdate_2: "2007-10-03", name: "test8",  note: "note8",  amount: 300, tax: 20, closed: false, ship_via: "FE", total: 320 },
+                { id: "91",  invdate_1: "2007-09-01",  invdate_2: "2007-09-01", name: "test9",  note: "note9",  amount: 400, tax: 30, closed: false, ship_via: "TN", total: 430 },
+                { id: "101", invdate_1: "2007-09-08", invdate_2: "2007-09-08", name: "test10", note: "note10", amount: 500, tax: 30, closed: true,  ship_via: "TN", total: 530 },
+                { id: "111", invdate_1: "2007-09-08", invdate_2: "2007-09-08", name: "test11", note: "note11", amount: 500, tax: 30, closed: false, ship_via: "FE", total: 530 },
+                { id: "121", invdate_1: "2007-09-10", invdate_2: "2007-09-10", name: "test12", note: "note12", amount: 500, tax: 30, closed: false, ship_via: "FE", total: 530 }
             ],
             initDateSearch = function (elem) {
                 setTimeout(function () {
@@ -72,10 +72,17 @@
             data: mydata,
             colModel: [
                 { name: "name", label: "Client", width: 100,  editable: true },
-                { name: "invdate", label: "Date", width: 80, align: "center", sorttype: "date",
+                { name: "invdate_1", label: "Date", width: 80, align: "center", sorttype: "date",
                     formatter: "date", formatoptions: { newformat: "d-M-Y" }, editable: editableInAddForm,
                     searchoptions: { sopt: ["eq", "ne", "lt", "le", "gt", "ge"], dataInit: initDateSearch } },
-                { name: "amount", label: "Amount", width: 75, template: "number" },
+                { name: "invdate_2", label: "Date", width: 80, align: "center", sorttype: "date",
+                    formatter: "date", formatoptions: { newformat: "d-M-Y" }, editable: editableInAddForm,
+                    searchoptions: { sopt: ["eq", "ne", "lt", "le", "gt", "ge"], dataInit: initDateSearch },
+					cellattr: function(rowId, cellValue, rawObject, cellModel, rdata){
+						// do something, here just return empty string - nothing
+						return "";
+				} },
+				{ name: "amount", label: "Amount", width: 75, template: "number" },
                 { name: "tax", label: "Tax", width: 100, template: "number",
                     searchoptions: { sopt: ["nIn", "eq", "ne", "lt", "le", "gt", "ge", "in", "ni"] } },
                 { name: "total", label: "Total", width: 60, template: "number" },
@@ -183,18 +190,24 @@
             assert.equal($($grid[0].rows[1].cells[1]).text(), "01-Oct-2007", "Passed!");
         });
         QUnit.test("0 formatted as number is 0.00", function(assert) {
-            assert.equal($($grid[0].rows[1].cells[2]).text(), "0.00", "Passed!");
+            assert.equal($($grid[0].rows[1].cells[3]).text(), "0.00", "Passed!");
         });
         QUnit.test("test data returned by getRowData for the rowid=51", function(assert) {
             var rowData = $grid.jqGrid("getRowData", "51");
-            assert.deepEqual(rowData, { invdate: "31-Oct-2007", name: "test5",  note: "note5",  amount: "300.00", tax: "20.00", closed: "false", ship_via: "FE", total: "320.00" }, "Passed!");
+            assert.deepEqual(rowData, { invdate_1: "31-Oct-2007", invdate_2: "31-Oct-2007", name: "test5",  note: "note5",  amount: "300.00", tax: "20.00", closed: "false", ship_via: "FE", total: "320.00" }, "Passed!");
         });
         QUnit.test("test add data by addRowData for the rowid=10", function(assert) {
-            var rowData = $grid.jqGrid("addRowData", "10", { invdate: "2015-04-03", name: "test15",  note: "note15",  amount: 300.00, tax: 20.00, closed: true, ship_via: "FE", total: 320.00 });
+            var rowData = $grid.jqGrid("addRowData", "10", { invdate_1: "2015-04-03", invdate_2: "2015-04-03", name: "test15",  note: "note15",  amount: 300.00, tax: 20.00, closed: true, ship_via: "FE", total: 320.00 });
             assert.equal($grid[0].rows.length, 12, "the grid has 11 data rows");
             assert.equal($($grid[0].rows[11].cells[1]).text(), "03-Apr-2015", "2015-04-03 is displayed as 03-Apr-2015");
             assert.equal($($grid[0].rows[11]).hasClass("myAltRowClass"), false, "the last row has no myAltRowClass");
             assert.equal($($grid[0].rows[10]).hasClass("myAltRowClass"), true, "the previous row has myAltRowClass");
+        });
+		QUnit.test("the formatted field title is in correct format", function(assert) {
+            assert.equal($grid[0].rows[1].cells[1].getAttribute('title'), "01-Oct-2007", "Passed!");
+        });
+		QUnit.test("the formatted field title is in correct format with cellAttr function", function(assert) {
+			assert.equal($grid[0].rows[1].cells[2].getAttribute('title'), "01-Oct-2007", "Passed!");
         });
     });
     //]]>
