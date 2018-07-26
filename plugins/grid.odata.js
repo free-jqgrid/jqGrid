@@ -1,7 +1,7 @@
 /**
  * @license OData plugin for Free-jqGrid
  *
- * Copyright (c) 2014-2016, Mark Babayev (https://github.com/mirik123) markolog@gmail.com
+ * Copyright (c) 2014-2018, Mark Babayev (https://github.com/mirik123) markolog@gmail.com
  * License MIT (MIT-LICENSE.txt)
  *
  * inspired by Richard Bennett gist code: jqGrid.ODataExtensions.js
@@ -9,16 +9,32 @@
  */
 
 /*jslint continue: true, nomen: true, plusplus: true, unparam: true, todo: true, vars: true, white: true */
-/*global jQuery, define */
+/*global jQuery, define, module, require */
 
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"free-jqgrid/grid.base"
+		], factory);
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			require("free-jqgrid/grid.base");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);

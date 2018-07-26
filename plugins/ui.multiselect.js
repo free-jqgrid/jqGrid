@@ -10,6 +10,9 @@
  * 
  * http://www.quasipartikel.at/multiselect/
  *
+ * UPDATED by Oleg Kiriljuk (oleg.kiriljuk@ok-soft-gmbh.com) to support jQuery 1.6 and hight
+ * (the usage of jQuery.attr and jQuery.removeAttr is replaced to the usage of jQuery.prop
+ *  in case of working with selected options of select)
  * 
  * Depends:
  *	ui.core.js
@@ -24,19 +27,36 @@
  *  Implement dynamic insertion through remote calls
  */
 
+/*global jQuery, define, module, require */
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"jquery-ui/sortable"
+		], factory);
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			require("jquery-ui/sortable");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);
 	}
-}(function($) {
+}(function ($) {
 
 $.widget("ui.multiselect", {
   options: {
@@ -65,7 +85,7 @@ $.widget("ui.multiselect", {
 		this.availableActions = $('<div class="actions ui-widget-header ui-helper-clearfix"><input type="text" class="search empty ui-widget-content ui-corner-all"/><a href="#" class="add-all">'+$.ui.multiselect.locale.addAll+'</a></div>').appendTo(this.availableContainer);
 		this.selectedList = $('<ul class="selected connected-list"><li class="ui-helper-hidden-accessible"></li></ul>').bind('selectstart', function(){return false;}).appendTo(this.selectedContainer);
 		this.availableList = $('<ul class="available connected-list"><li class="ui-helper-hidden-accessible"></li></ul>').bind('selectstart', function(){return false;}).appendTo(this.availableContainer);
-		
+
 		var that = this;
 
 		// set dimensions
@@ -76,15 +96,15 @@ $.widget("ui.multiselect", {
 		// fix list height to match <option> depending on their individual header's heights
 		this.selectedList.height(Math.max(this.element.height()-this.selectedActions.height(),1));
 		this.availableList.height(Math.max(this.element.height()-this.availableActions.height(),1));
-		
+
 		if ( !this.options.animated ) {
 			this.options.show = 'show';
 			this.options.hide = 'hide';
 		}
-		
+
 		// init lists
 		this._populateLists(this.element.find('option'));
-		
+
 		// make selection sortable
 		if (this.options.sortable) {
 			this.selectedList.sortable({
@@ -93,12 +113,13 @@ $.widget("ui.multiselect", {
 				update: function(event, ui) {
 					// apply the new sort order to the original selectbox
 					that.selectedList.find('li').each(function() {
-						if ($(this).data('optionLink'))
+						if ($(this).data('optionLink')) {
 							$(this).data('optionLink').remove().appendTo(that.element);
+						}
 					});
 				},
 				receive: function(event, ui) {
-					ui.item.data('optionLink').attr('selected', true);
+					ui.item.data('optionLink').prop('selected', true);
 					// increment count
 					that.count += 1;
 					that._updateCount();
@@ -116,28 +137,30 @@ $.widget("ui.multiselect", {
 				}
 			});
 		}
-		
+
 		// set up livesearch
 		if (this.options.searchable) {
 			this._registerSearchEvents(this.availableContainer.find('input.search'));
 		} else {
 			$('.search').hide();
 		}
-		
+
 		// batch actions
 		this.container.find(".remove-all").click(function() {
-			that._populateLists(that.element.find('option').removeAttr('selected'));
+			that._populateLists(that.element.find('option').prop('selected', false));
 			return false;
 		});
-		
+
 		this.container.find(".add-all").click(function() {
-			var options = that.element.find('option').not("[selected]");
+			var options = that.element.find('option').not(":selected");
 			if (that.availableList.children('li:hidden').length > 1) {
 				that.availableList.children('li').each(function(i) {
-					if ($(this).is(":visible")) $(options[i-1]).attr('selected', 'selected'); 
+					if ($(this).is(":visible")) {
+						$(options[i-1]).prop('selected', true);
+					}
 				});
 			} else {
-				options.attr('selected', 'selected');
+				options.prop('selected', true);
 			}
 			that._populateLists(that.element.find('option'));
 			return false;
@@ -156,18 +179,20 @@ $.widget("ui.multiselect", {
 
 		var that = this;
 		var items = $(options.map(function(i) {
-			var isSelected = $(this).is("[selected]"), item = that._getOptionNode(this).appendTo(isSelected ? that.selectedList : that.availableList).show();
+			var isSelected = $(this).is(":selected"), item = that._getOptionNode(this).appendTo(isSelected ? that.selectedList : that.availableList).show();
 
-			if (isSelected) that.count += 1;
+			if (isSelected) {
+				that.count += 1;
+			}
 			that._applyItemState(item, isSelected);
 			item.data('idx', i);
 			return item[0];
-    }));
-		
+		}));
+
 		// update count
 		this._updateCount();
 		that._filter.apply(this.availableContainer.find('input.search'), [that.availableList]);
-  },
+	},
 	_updateCount: function() {
 		this.element.trigger('change');
 		this.selectedContainer.find('span.count').text(this.count+" "+$.ui.multiselect.locale.itemsCount);
@@ -187,17 +212,16 @@ $.widget("ui.multiselect", {
 		return clone;
 	},
 	_setSelected: function(item, selected) {
-		item.data('optionLink').attr('selected', selected);
+		item.data('optionLink').prop('selected', selected);
 
 		if (selected) {
 			var selectedItem = this._cloneWithData(item);
 			item[this.options.hide](this.options.animated, function() { $(this).remove(); });
 			selectedItem.appendTo(this.selectedList).hide()[this.options.show](this.options.animated);
-			
+
 			this._applyItemState(selectedItem, true);
 			return selectedItem;
 		} else {
-			
 			// look for successor based on initial option index
 			var items = this.availableList.find('li'), comparator = this.options.nodeComparator;
 			var succ = null, i = item.data('idx'), direction = comparator(item, $(items[i]));
@@ -215,31 +239,32 @@ $.widget("ui.multiselect", {
 			} else {
 				succ = items[i];
 			}
-			
+
 			var availableItem = this._cloneWithData(item);
 			succ ? availableItem.insertBefore($(succ)) : availableItem.appendTo(this.availableList);
 			item[this.options.hide](this.options.animated, function() { $(this).remove(); });
 			availableItem.hide()[this.options.show](this.options.animated);
-			
+
 			this._applyItemState(availableItem, false);
 			return availableItem;
 		}
 	},
 	_applyItemState: function(item, selected) {
 		if (selected) {
-			if (this.options.sortable)
+			if (this.options.sortable) {
 				item.children('span').addClass('ui-icon-arrowthick-2-n-s').removeClass('ui-helper-hidden').addClass('ui-icon');
-			else
+			} else {
 				item.children('span').removeClass('ui-icon-arrowthick-2-n-s').addClass('ui-helper-hidden').removeClass('ui-icon');
+			}
 			item.find('a.action span').addClass('ui-icon-minus').removeClass('ui-icon-plus');
 			this._registerRemoveEvents(item.find('a.action'));
-			
+
 		} else {
 			item.children('span').removeClass('ui-icon-arrowthick-2-n-s').addClass('ui-helper-hidden').removeClass('ui-icon');
 			item.find('a.action span').addClass('ui-icon-plus').removeClass('ui-icon-minus');
 			this._registerAddEvents(item.find('a.action'));
 		}
-		
+
 		this._registerDoubleClickEvents(item);
 		this._registerHoverEvents(item);
 	},
@@ -248,19 +273,21 @@ $.widget("ui.multiselect", {
 		var input = $(this);
 		var rows = list.children('li'),
 			cache = rows.map(function(){
-				
+
 				return $(this).text().toLowerCase();
 			});
 		
 		var term = $.trim(input.val().toLowerCase()), scores = [];
-		
+
 		if (!term) {
 			rows.show();
 		} else {
 			rows.hide();
 
 			cache.each(function(i) {
-				if (this.indexOf(term)>-1) { scores.push(i); }
+				if (this.indexOf(term)>-1) {
+					scores.push(i);
+				}
 			});
 
 			$.each(scores, function() {
@@ -269,7 +296,9 @@ $.widget("ui.multiselect", {
 		}
 	},
 	_registerDoubleClickEvents: function(elements) {
-		if (!this.options.doubleClickable) return;
+		if (!this.options.doubleClickable) {
+			return;
+		}
 		elements.dblclick(function(ev) {
 			if ($(ev.target).closest('.action').length === 0) {
 				// This may be triggered with rapid clicks on actions as well. In that
@@ -295,22 +324,22 @@ $.widget("ui.multiselect", {
 			that._updateCount();
 			return false;
 		});
-		
+
 		// make draggable
 		if (this.options.sortable) {
-  		elements.each(function() {
-  			$(this).parent().draggable({
-  	      connectToSortable: that.selectedList,
-  				helper: function() {
-  					var selectedItem = that._cloneWithData($(this)).width($(this).width() - 50);
-  					selectedItem.width($(this).width());
-  					return selectedItem;
-  				},
-  				appendTo: that.container,
-  				containment: that.container,
-  				revert: 'invalid'
-  	    });
-  		});		  
+			elements.each(function() {
+				$(this).parent().draggable({
+					connectToSortable: that.selectedList,
+					helper: function() {
+						var selectedItem = that._cloneWithData($(this)).width($(this).width() - 50);
+						selectedItem.width($(this).width());
+						return selectedItem;
+					},
+					appendTo: that.container,
+					containment: that.container,
+					revert: 'invalid'
+				});
+			});		  
 		}
 	},
 	_registerRemoveEvents: function(elements) {
@@ -321,7 +350,7 @@ $.widget("ui.multiselect", {
 			that._updateCount();
 			return false;
 		});
- 	},
+	},
 	_registerSearchEvents: function(input) {
 		var that = this;
 
@@ -332,15 +361,16 @@ $.widget("ui.multiselect", {
 			$(this).removeClass('ui-state-active');
 		})
 		.keypress(function(e) {
-			if (e.keyCode == 13)
+			if (e.keyCode == 13) {
 				return false;
+			}
 		})
 		.keyup(function() {
 			that._filter.apply(this, [that.availableList]);
 		});
 	}
 });
-		
+
 $.extend($.ui.multiselect, {
 	locale: {
 		addAll:'Add all',
@@ -348,6 +378,5 @@ $.extend($.ui.multiselect, {
 		itemsCount:'items selected'
 	}
 });
-
 
 }));

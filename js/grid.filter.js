@@ -1,6 +1,7 @@
 /**
  * jqFilter  jQuery jqGrid filter addon.
- * Copyright (c) 2011, Tony Tomov, tony@trirand.com
+ * Copyright (c) 2011-2014, Tony Tomov, tony@trirand.com
+ * Copyright (c) 2014-2018, Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
  * Dual licensed under the MIT and GPL licenses
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl-2.0.html
@@ -27,21 +28,52 @@
 */
 /*jshint eqeqeq:false, eqnull:true, devel:true */
 /*jslint browser: true, devel: true, eqeq: true, plusplus: true, vars: true, white: true */
-/*global jQuery, define */
+/*global jQuery, define, exports, module, require */
 
-(function (factory) {
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.base", "./grid.common"], factory);
-	} else if (typeof exports === "object") {
+		//console.log("grid.filter AMD");
+		define([
+			"jquery",
+			"./grid.base",
+			"./grid.common"
+		], function ($) {
+			//console.log("grid.filter AMD: define callback");
+			return factory($, global);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		//console.log("grid.filter CommonJS, typeof define=" + typeof define + ", define=" + define);
+		module.exports = function (root, $) {
+			//console.log("grid.filter CommonJS: in module.exports");
+			if (!root) {
+				root = window;
+			}
+			//console.log("grid.filter CommonJS: before require('jquery')");
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			//console.log("grid.filter CommonJS: before require('./grid.base')");
+			require("./grid.base");
+			//console.log("grid.filter CommonJS: before require('./grid.common')");
+			require("./grid.common");
+			factory($, root);
+			return $;
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		//console.log("grid.filter Browser: before factory");
+		factory(jQuery, global);
 	}
-}(function ($) {
+}(typeof window !== "undefined" ? window : this, function ($, window) {
 	"use strict";
 	var jgrid = $.jgrid;
 	// begin module grid.filter
@@ -60,7 +92,6 @@
 			columns: [],
 			onChange: null,
 			afterRedraw: null,
-			checkValues: null,
 			error: false,
 			errmsg: "",
 			errorcheck: true,
@@ -108,7 +139,7 @@
 					}
 					iCol = $t.p.iPropByName[cmName];
 					if (iCol !== undefined) {
-						return { cm: $t.p.colModel[iCol], iCol: iCol, isAddProp: true };
+						return { cm: $t.p.additionalProperties[iCol], iCol: iCol, isAddProp: true };
 					}
 					return { cm: null, iCol: -1 };
 				},
@@ -237,7 +268,7 @@
 					}
 
 					groupOpSelect.append(str)
-						.bind("change", function () {
+						.on("change", function () {
 							group.groupOp = $(groupOpSelect).val();
 							that.onchange(); // signals that the filter has changed
 						});
@@ -247,7 +278,7 @@
 				if (p.groupButton) {
 					inputAddSubgroup = $("<input type='button' value='+ {}' title='" + getRes("addGroupTitle") + "' class='" +
 						getGuiStyles("searchDialog.addGroupButton", "add-group") + "'/>");
-					inputAddSubgroup.bind("click", function () {
+					inputAddSubgroup.on("click", function () {
 						if (group.groups === undefined) {
 							group.groups = [];
 						}
@@ -269,7 +300,7 @@
 					// button for adding a new rule
 					var inputAddRule = $("<input type='button' value='+' title='" + getRes("addRuleTitle") + "' class='" +
 							getGuiStyles("searchDialog.addRuleButton", "add-rule ui-add") + "'/>"), cm;
-					inputAddRule.bind("click", function () {
+					inputAddRule.on("click", function () {
 						var searchable, hidden, ignoreHiding;
 						//if(!group) { group = {};}
 						if (group.rules === undefined) {
@@ -316,7 +347,7 @@
 					var inputDeleteGroup = $("<input type='button' value='-' title='" + getRes("deleteGroupTitle") + "' class='" +
 							getGuiStyles("searchDialog.deleteGroupButton", "delete-group") + "'/>");
 					th.append(inputDeleteGroup);
-					inputDeleteGroup.bind("click", function () {
+					inputDeleteGroup.on("click", function () {
 						// remove group from parent
 						for (i = 0; i < parentgroup.groups.length; i++) {
 							if (parentgroup.groups[i] === group) {
@@ -382,7 +413,7 @@
 				var ruleFieldSelect = $("<select class='" + getGuiStyles("searchDialog.label", "selectLabel") +
 						"'></select>"), ina, aoprs = [];
 				ruleFieldTd.append(ruleFieldSelect);
-				ruleFieldSelect.bind("change", function () {
+				ruleFieldSelect.on("change", function () {
 					rule.field = $(ruleFieldSelect).val();
 
 					var trpar = $(this).parents("tr:first"), columns, k; // define LOCAL variables
@@ -403,12 +434,14 @@
 							getCmInfo(columns.cmName),
 							{ id: jgrid.randId(), name: columns.name, mode: "search" }
 						);
+					searchoptions.column = columns; // add reference to that.p.columns[k];
 					if (isIE && columns.inputtype === "text") {
 						if (!searchoptions.size) {
 							searchoptions.size = 10;
 						}
 					}
-					var elm = jgrid.createEl.call($t, columns.inputtype, searchoptions,
+					var elm = jgrid.createEl.call($t, columns.inputtype,
+								$.extend({}, searchoptions, searchoptions.attr || {}),
 								"", true, that.p.ajaxSelectOptions || {}, true);
 					$(elm).addClass(getGuiStyles("searchDialog.elem", "input-elm"));
 					//that.createElement(rule, "");
@@ -453,11 +486,24 @@
 					}
 					// data
 					$(".data", trpar).empty().append(elm);
+					if (columns.createColumnIndex && searchoptions.generateDatalist) {
+						var dataListId = "dl_" + elm.id,
+							$datalist = $($t).jqGrid("generateDatalistFromColumnIndex", columns.name);
+						if ($datalist != null && $datalist.length > 0) {
+							$(elm).attr("list", dataListId);
+							$(".data", trpar).append($datalist.attr("id", dataListId));
+						}
+					}
 					jgrid.bindEv.call($t, elm, searchoptions);
-					$(".input-elm", trpar).bind("change", function (e) {
-						var elem = e.target;
-						rule.data = elem.nodeName.toUpperCase() === "SPAN" && searchoptions && isFunction(searchoptions.custom_value) ?
-								searchoptions.custom_value.call($t, $(elem).children(".customelement:first"), "get") : elem.value;
+					$(".input-elm", trpar).on("change", searchoptions, function (e) {
+						var elem = e.target, column = e.data.column;
+						rule.data = column && column.inputtype === "custom" && isFunction(column.searchoptions.custom_value) ?
+								column.searchoptions.custom_value.call($t, $(this).find(".customelement").first(), "get") :
+								elem.value;
+						if ($(elem).is("input[type=checkbox]") && !$(elem).is(":checked")) {
+							// value of checkbox contains checked value
+							rule.data = $(elem).data("offval");
+						}
 						that.onchange(); // signals that the filter has changed
 					});
 					setTimeout(function () { //IE, Opera, Chrome
@@ -499,21 +545,28 @@
 				var editoptions = $.extend({}, cm.editoptions || {});
 				delete editoptions.readonly;
 				delete editoptions.disabled;
+				var searchoptions = $.extend(
+						{},
+						editoptions,
+						cm.searchoptions || {},
+						getCmInfo(cm.cmName),
+						{ id: jgrid.randId(), name: cm.name, mode: "search" });
+				searchoptions.column = cm;
 				var ruleDataInput = jgrid.createEl.call($t, cm.inputtype,
-						$.extend({}, editoptions, cm.searchoptions || {}, getCmInfo(cm.cmName), { id: jgrid.randId(), name: cm.name }),
+						$.extend({}, searchoptions, searchoptions.attr || {}),
 						rule.data, true, that.p.ajaxSelectOptions || {}, true);
-				if (rule.op === "nu" || rule.op === "nn") {
+				if (rule.op === "nu" || rule.op === "nn" || $.inArray(rule.op, $t.p.customUnaryOperations) >= 0) {
 					$(ruleDataInput).attr("readonly", "true");
 					$(ruleDataInput).attr("disabled", "true");
 				} //retain the state of disabled text fields in case of null ops
 				// dropdown for: choosing operator
 				var ruleOperatorSelect = $("<select class='" + getGuiStyles("searchDialog.operator", "selectopts") + "'></select>");
 				ruleOperatorTd.append(ruleOperatorSelect);
-				ruleOperatorSelect.bind("change", function () {
+				ruleOperatorSelect.on("change", function () {
 					rule.op = $(ruleOperatorSelect).val();
 					var trpar = $(this).parents("tr:first"),
 						rd = $(".input-elm", trpar)[0];
-					if (rule.op === "nu" || rule.op === "nn") { // disable for operator "is null" and "is not null"
+					if (rule.op === "nu" || rule.op === "nn" || $.inArray(rule.op, $t.p.customUnaryOperations) >= 0) { // disable for operator "is null" and "is not null"
 						rule.data = "";
 						if (rd.tagName.toUpperCase() !== "SELECT") { rd.value = ""; }
 						rd.setAttribute("readonly", "true");
@@ -564,10 +617,27 @@
 				// is created previously
 				//ruleDataInput.setAttribute("type", "text");
 				ruleDataTd.append(ruleDataInput);
+				if (cm.createColumnIndex && cm.searchoptions.generateDatalist) {
+					var dataListId = "dl_" + ruleDataInput.id,
+						$datalist = $($t).jqGrid("generateDatalistFromColumnIndex", cm.name);
+					if ($datalist != null && $datalist.length > 0) {
+						$(ruleDataInput).attr("list", dataListId);
+						ruleDataTd.append($datalist.attr("id", dataListId));
+					}
+				}
 				jgrid.bindEv.call($t, ruleDataInput, cm.searchoptions);
 				$(ruleDataInput).addClass(getGuiStyles("searchDialog.elem", "input-elm"))
-					.bind("change", function () {
-						rule.data = cm.inputtype === "custom" ? cm.searchoptions.custom_value.call($t, $(this).children(".customelement:first"), "get") : $(this).val();
+					.on("change", function () {
+						rule.data = cm.inputtype === "custom" ?
+								cm.searchoptions.custom_value.call($t, $(this).find(".customelement").first(), "get") :
+								$(this).val();
+						if ($(this).is("input[type=checkbox]") && !$(this).is(":checked")) {
+							// value of checkbox contains checked value
+							rule.data = $(this).data("offval");
+						}
+						if ($.isArray(rule.data)) {
+							rule.data = rule.data.join(p.inFilterSeparator || ",");
+						}
 						that.onchange(); // signals that the filter has changed
 					});
 
@@ -581,7 +651,7 @@
 							getGuiStyles("searchDialog.deleteRuleButton", "delete-rule ui-del") + "'/>");
 					ruleDeleteTd.append(ruleDeleteInput);
 					//$(ruleDeleteInput).html("").height(20).width(30).button({icons: {  primary: "ui-icon-minus", text:false}});
-					ruleDeleteInput.bind("click", function () {
+					ruleDeleteInput.on("click", function () {
 						// remove rule from group
 						for (i = 0; i < group.rules.length; i++) {
 							if (group.rules[i] === rule) {
@@ -678,7 +748,7 @@
 				if (p.errorcheck) {
 					checkData(rule.data, cm);
 				}
-				if ($.inArray(cm.searchtype, numtypes) !== -1 || opC === "nn" || opC === "nu") {
+				if ($.inArray(cm.searchtype, numtypes) !== -1 || opC === "nn" || opC === "nu" || $.inArray(opC, getGrid().p.customUnaryOperations) >= 0) {
 					ret = rule.field + " " + operand + " " + val;
 				} else {
 					ret = rule.field + " " + operand + ' "' + val + '"';

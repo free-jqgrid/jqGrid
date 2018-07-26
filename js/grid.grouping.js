@@ -1,15 +1,34 @@
 /*jshint eqeqeq:false, eqnull:true */
-/*global jQuery, define */
+/*global jQuery, define, exports, module, require */
 /*jslint plusplus: true, unparam: true, eqeq: true, nomen: true, todo: true, continue: true */
 // Grouping module
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.base"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"./grid.base"
+		], factory);
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if (!root) {
+				root = window;
+			}
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			require("./grid.base");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);
@@ -105,10 +124,10 @@
 		},
 		groupingPrepare: function (record, irow) {
 			this.each(function () {
-				var $t = this, grp = $t.p.groupingView, groups = grp.groups, counters = grp.counters,
+				var $t = this, p = $t.p, grp = p.groupingView, groups = grp.groups, counters = grp.counters,
 					lastvalues = grp.lastvalues, isInTheSameGroup = grp.isInTheSameGroup, groupLength = grp.groupField.length,
 					i, j, keys, newGroup, counter, fieldName, v, displayName, displayValue, changed = false,
-					groupingCalculationsHandler = base.groupingCalculations.handler,
+					groupingCalculationsHandler = base.groupingCalculations.handler, key,
 					buildSummary = function () {
 						var iSummary, summary, st;
 						for (iSummary = 0; iSummary < counter.summary.length; iSummary++) {
@@ -124,13 +143,36 @@
 							}
 						}
 						return counter.summary;
+					},
+					normilizeValue = function (value, cmOrPropName) {
+						if (value == null && grp.useDefaultValuesOnGrouping) {
+							var cm = p.iColByName[cmOrPropName] !== undefined ?
+									p.colModel[p.iColByName[cmOrPropName]] :
+									p.additionalProperties[p.iPropByName[cmOrPropName]],
+									defaultValue;
+
+							if (cm != null && cm.formatter != null) {
+								if (cm.formatoptions != null && cm.formatoptions.defaultValue !== undefined) {
+									value = cm.formatoptions.defaultValue;
+								} else if (typeof cm.formatter === "string") {
+									defaultValue = $($t).jqGrid("getGridRes", "formatter." + cm.formatter + ".defaultValue");
+									if (defaultValue !== undefined) {
+										value = defaultValue;
+									}
+								}
+							}
+						}
+						return value;
 					};
 
 				for (i = 0; i < groupLength; i++) {
 					fieldName = grp.groupField[i];
+					v = normilizeValue(record[fieldName], fieldName);
+					key = v;
 					displayName = grp.displayField[i];
-					v = record[fieldName];
-					displayValue = displayName == null ? null : record[displayName];
+					displayValue = displayName == null ?
+						null :
+						normilizeValue(record[displayName], displayName);
 
 					if (displayValue == null) {
 						displayValue = v;
@@ -141,7 +183,7 @@
 							keys.push(record[grp.groupField[j]]);
 						}
 						newGroup = {
-							idx: i,
+							idx: i, // index in grp.groupField array
 							dataIndex: fieldName,
 							value: v,
 							displayValue: displayValue,
@@ -150,43 +192,43 @@
 							keys: keys,
 							summary: []
 						};
+						counter = {
+							cnt: 1,
+							pos: groups.length,
+							summary: $.extend(true, [], grp.summary)
+						};
 						if (irow === 0) {
 							// First record always starts a new group
 							groups.push(newGroup);
 							lastvalues[i] = v;
-							counter = {
-								cnt: 1,
-								pos: groups.length - 1,
-								summary: $.extend(true, [], grp.summary)
-							};
 							counters[i] = counter;
-							groups[counter.pos].summary = buildSummary();
 						} else {
-							counter = {
-								cnt: 1,
-								pos: groups.length,
-								summary: $.extend(true, [], grp.summary)
-							};
 							if (typeof v !== "object" && ($.isArray(isInTheSameGroup) && $.isFunction(isInTheSameGroup[i]) ? !isInTheSameGroup[i].call($t, lastvalues[i], v, i, grp) : lastvalues[i] !== v)) {
 								// This record is not in same group as previous one
 								groups.push(newGroup);
 								lastvalues[i] = v;
 								changed = true;
 								counters[i] = counter;
-								groups[counter.pos].summary = buildSummary();
 							} else {
 								if (changed) {
 									// This group has changed because an earlier group changed.
 									groups.push(newGroup);
 									lastvalues[i] = v;
 									counters[i] = counter;
-									groups[counter.pos].summary = buildSummary();
 								} else {
 									counter = counters[i];
 									counter.cnt += 1;
 									groups[counter.pos].cnt = counter.cnt;
-									groups[counter.pos].summary = buildSummary();
 								}
+							}
+						}
+						groups[counter.pos].summary = buildSummary();
+						for (j = counter.pos - 1; j >= 0; j--) {
+							// find the parent group (the grouping header)
+							if (groups[j].idx < groups[counter.pos].idx) {
+								groups[counter.pos].parentGroupIndex = j;
+								groups[counter.pos].parentGroup = groups[j];
+								break;
 							}
 						}
 					}
@@ -194,6 +236,18 @@
 				//gdata.push( rData );
 			});
 			return this;
+		},
+		getGroupHeaderIndex: function (hid, clickedElem) {
+			var $self = this, self = $self[0], p = self.p,
+				$tr = clickedElem ?
+						$(clickedElem).closest("tr.jqgroup") :
+						$("#" + jgrid.jqID(hid)),
+				groupLevel = parseInt($tr.data("jqgrouplevel"), 10),
+				hPrefix = p.id + "ghead_" + groupLevel + "_";
+			if (isNaN(groupLevel) || !$tr.hasClass("jqgroup") || hid.length <= hPrefix.length) {
+				return -1;
+			}
+			return parseInt(hid.substring(hPrefix.length), 10);
 		},
 		groupingToggle: function (hid, clickedElem) {
 			this.each(function () {
@@ -331,9 +385,8 @@
 			//        ... - all <td> elements of the last row
 			//    "</tr>" - closing tag of the last row of the group
 			// The input parameter rn corresponds to p.rowNum in the most cases.
-			var str = "", $t = this[0], p = $t.p, toEnd = 0, gv, cp = [], icon = "", hid, clid,
+			var str = "", $t = this[0], p = $t.p, toEnd = 0, cp = [],
 				grp = p.groupingView, sumreverse = $.makeArray(grp.groupSummary),
-				pmrtl = (grp.groupCollapse ? grp.plusicon : grp.minusicon) + " tree-wrap",
 				groupLength = grp.groupField.length, groups = grp.groups, colModel = p.colModel,
 				cmLength = colModel.length, page = p.page,
 				eventNames = "jqGridShowHideCol.groupingRender",
@@ -444,37 +497,47 @@
 
 			sumreverse.reverse();
 			$.each(groups, function (i, n) {
+				var gv, clid = p.id + "ghead_" + n.idx, hid = clid + "_" + i,
+					groupCollapse = $.isFunction(grp.groupCollapse) ?
+						grp.groupCollapse.call($t, { group: n, rowid: hid }) :
+						grp.groupCollapse,
+					jj, kk, ik, colspan = 1, offset = 0, sgr, gg, end, grpTextStr,
+					leaf = groupLength - 1 === n.idx,
+					parentGroupCollapse = n.parentGroup != null ?
+						n.parentGroup.collapsed :
+						false,
+					icon = "<span style='cursor:pointer;margin-" +
+						(p.direction === "rtl" ? "right:" : "left:") + (n.idx * 12) +
+						"px;' class='" + grp.commonIconClass + " " +
+						(groupCollapse ? grp.plusicon : grp.minusicon) + " tree-wrap'></span>";
 				if (grp._locgr) {
 					if (!(n.startRow + n.cnt > (page - 1) * rn && n.startRow < page * rn)) {
 						return true;
 					}
 				}
+				if (parentGroupCollapse) {
+					groupCollapse = true;
+				}
+				if (groupCollapse !== undefined) {
+					n.collapsed = groupCollapse;
+				}
 				toEnd++;
-				clid = p.id + "ghead_" + n.idx;
-				hid = clid + "_" + i;
-				icon = "<span style='cursor:pointer;margin-" +
-						(p.direction === "rtl" ? "right:" : "left:") + (n.idx * 12) +
-						"px;' class='" + grp.commonIconClass + " " + pmrtl +
-						"' onclick=\"jQuery('#" + jgrid.jqID(p.id).replace("\\", "\\\\") +
-						"').jqGrid('groupingToggle','" + hid + "', this);return false;\"></span>";
 				try {
 					if ($.isArray(grp.formatDisplayField) && $.isFunction(grp.formatDisplayField[n.idx])) {
-						n.displayValue = grp.formatDisplayField[n.idx].call($t, n.displayValue, n.value, colModel[cp[n.idx]], n.idx, grp);
+						n.displayValue = grp.formatDisplayField[n.idx].call($t, n.displayValue, n.value, colModel[cp[n.idx]], n.idx, n, i);
 						gv = n.displayValue;
 					} else {
-						gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value);
+						gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value, n);
 					}
 				} catch (egv) {
 					gv = n.displayValue;
 				}
 				str += "<tr id='" + hid + "' data-jqgrouplevel='" + n.idx + "' " +
-						(grp.groupCollapse && n.idx > 0 ? "style='display:none;' " : "") +
-						"role='row' class='" + jqgroupClass + " " + clid + "'>";
-				var grpTextStr = $.isFunction(grp.groupText[n.idx]) ?
-						grp.groupText[n.idx].call($t, gv, n.cnt, n.summary) :
-						jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary),
-					colspan = 1, jj, kk, ik, offset = 0, sgr, gg, end,
-					leaf = groupLength - 1 === n.idx;
+					(groupCollapse && parentGroupCollapse ? "style='display:none;' " : "") +
+					"role='row' class='" + jqgroupClass + " " + clid + "'>";
+				grpTextStr = $.isFunction(grp.groupText[n.idx]) ?
+					grp.groupText[n.idx].call($t, gv, n.cnt, n.summary) :
+					jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary);
 				if (typeof grpTextStr !== "string" && typeof grpTextStr !== "number") {
 					grpTextStr = gv;
 				}
@@ -522,7 +585,7 @@
 								continue;
 							}
 							str += "<tr data-jqfootlevel='" + (n.idx - ik) +
-									(grp.groupCollapse && ((n.idx - ik) > 0 || !grp.showSummaryOnHide) ? "' style='display:none;'" : "'") +
+									(groupCollapse && ((n.idx - ik) > 0 || !grp.showSummaryOnHide) ? "' style='display:none;'" : "'") +
 									" role='row' class='" + jqfootClass + "'>";
 							str += buildSummaryTd(i, ik, groups[n.idx - ik], 0);
 							str += "</tr>";
@@ -531,8 +594,8 @@
 					}
 				}
 			});
-			this.unbind(eventNames)
-				.bind(eventNames, function () { //e, show, cmName, iColShow) {
+			this.off(eventNames)
+				.on(eventNames, function () { //e, show, cmName, iColShow) {
 					// TODO fix the code after resorting columns
 					var iCol = p.iColByName[grp.iconColumnName], iRow, row, iColNew, i; //$cellData;
 					if ($.inArray("header", grp.groupSummaryPos) >= 0) {

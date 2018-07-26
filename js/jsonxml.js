@@ -20,22 +20,47 @@
 	Author:      Tony Tomov
 */
 
-/*global alert, define */
+/*global jQuery, alert, define, exports, module, require */
 /*jslint browser: true, vars: true, regexp: true, white: true */
 
-(function (factory) {
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery"], factory);
-	} else if (typeof exports === "object") {
+		//console.log("jsonxml AMD");
+		define([
+			"jquery"
+		], function ($) {
+			//console.log("jsonxml AMD: define callback");
+			return factory($, global);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		//console.log("jsonxml CommonJS, typeof define=" + typeof define + ", define=" + define);
+		module.exports = function (root, $) {
+			//console.log("jsonxml CommonJS: in module.exports");
+			if (!root) {
+				root = window;
+			}
+			//console.log("jsonxml CommonJS: before require('jquery')");
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			//console.log("jsonxml CommonJS: before factory");
+			return factory($, root);
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		//console.log("jsonxml Browser: before factory");
+		factory(jQuery, global);
 	}
-}(function ($) {
+}(typeof window !== "undefined" ? window : this, function ($, window) {
 	"use strict";
 	// begin module jsonxml
 	var xmlJsonClass = {
@@ -314,4 +339,5 @@
 		};
 	window.xmlJsonClass = xmlJsonClass;
 	// end module jsonxml
+	return xmlJsonClass;
 }));

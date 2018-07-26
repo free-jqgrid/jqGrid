@@ -1,23 +1,42 @@
 /**
  * jqGrid extension for SubGrid Data
  * Copyright (c) 2008-2014, Tony Tomov, tony@trirand.com
- * Copyright (c) 2014-2016, Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
+ * Copyright (c) 2014-2018, Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
  * Dual licensed under the MIT and GPL licenses:
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl-2.0.html
 **/
 
 /*jshint eqeqeq:false */
-/*global jQuery, define */
+/*global jQuery, define, exports, module, require */
 /*jslint eqeq: true, nomen: true, plusplus: true, unparam: true, white: true */
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.base"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"./grid.base"
+		], factory);
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if (!root) {
+				root = window;
+			}
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			require("./grid.base");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);
@@ -45,8 +64,15 @@
 	jgrid.extend({
 		setSubGrid: function () {
 			return this.each(function () {
-				var p = this.p, cm = p.subGridModel[0], i;
+				var p = this.p, $self = $(this), cm = p.subGridModel[0], i,
+					getIcon = function (path) {
+						return $self.jqGrid("getIconRes", path);
+					};
 				p.subGridOptions = $.extend({
+					commonIconClass: getIcon("subgrid.common"),
+					plusicon: getIcon("subgrid.plus"),
+					minusicon: getIcon("subgrid.minus"),
+					openicon: (p.direction === "rtl" ? getIcon("subgrid.openRtl") : getIcon("subgrid.openLtr")),
 					expandOnLoad: false,
 					delayOnLoad: 50,
 					selectOnExpand: false,
@@ -78,7 +104,7 @@
 				hasSubgrid = $.isFunction(subGridOptions.hasSubgrid) ?
 					subGridOptions.hasSubgrid.call(self, { rowid: rowid, iRow: iRow, iCol: pos, data: item }) :
 					true;
-			return self == null || self.p == null || subGridOptions == null ? "" :
+			return self.p == null ? "" :
 					"<td role='gridcell' class='" + base.getGuiStyles.call(this, "subgrid.tdStart", hasSubgrid ? "ui-sgcollapsed sgcollapsed" : "") + "' " +
 					self.formatCol(pos, iRow) + ">" +
 					(hasSubgrid ? "<div class='" + base.getGuiStyles.call(this, "subgrid.buttonDiv", "sgbutton-div") +
@@ -156,6 +182,9 @@
 								(subgridTableClasses ? " style='width:1px' role='presentation' class='" + subgridTableClasses + "'" : "") +
 								"><thead></thead><tbody></tbody></table>"),
 							$tr = $("<tr></tr>");
+
+						ts.grid.endReq.call(ts);
+
 						for (i = 0; i < cm.name.length; i++) {
 							$th = $("<th class='" + thSubgridClasses + "'></th>")
 									.html(cm.name[i])
@@ -165,8 +194,6 @@
 						$tr.appendTo($table[0].tHead);
 						fullBody(sjxml, $($table[0].tBodies[0]));
 						$("#" + jqID(p.id + "_" + sbid)).append($table);
-						ts.grid.hDiv.loading = false;
-						$("#load_" + jqID(p.id)).hide();
 						return false;
 					},
 					populatesubgrid = function (rd) {
@@ -184,8 +211,7 @@
 							}
 						}
 						if (!ts.grid.hDiv.loading) {
-							ts.grid.hDiv.loading = true;
-							$("#load_" + jqID(p.id)).show();
+							ts.grid.beginReq.call(ts);
 							if (!p.subgridtype) {
 								p.subgridtype = p.datatype;
 							}
@@ -204,7 +230,6 @@
 										context: sid,
 										data: jgrid.serializeFeedback.call(ts, p.serializeSubGridData, "jqGridSerializeSubGridData", dp),
 										success: function (data) {
-											$(ts.grid.eDiv).hide();
 											subGridXmlOrJson(
 												data,
 												this,
@@ -215,6 +240,8 @@
 											var loadError = p.loadSubgridError === undefined ?
 													p.loadError :
 													p.loadSubgridError;
+
+											ts.grid.endReq.call(ts);
 											if ($.isFunction(loadError)) {
 												loadError.call(ts, jqXHR, textStatus, errorThrown);
 											}
@@ -225,9 +252,6 @@
 													this,
 													p.subgridtype === "xml" ? fillXmlBody : fillJsonBody
 												);
-											} else {
-												ts.grid.hDiv.loading = false;
-												$("#load_" + jqID(p.id)).hide();
 											}
 										}
 									}, jgrid.ajaxOptions, p.ajaxSubgridOptions || {}));
@@ -250,7 +274,7 @@
 							}
 						});
 						if ($(this).hasClass("sgcollapsed")) {
-							if (p.subGridOptions.reloadOnExpand === true || (p.subGridOptions.reloadOnExpand === false && !$(r).hasClass('ui-subgrid'))) {
+							if (p.subGridOptions.reloadOnExpand === true || (p.subGridOptions.reloadOnExpand === false && !$(r).hasClass("ui-subgrid"))) {
 								atd = pos >= 1 ? "<td colspan='" + pos + "'>&#160;</td>" : "";
 								if (!subGridFeedback.call(ts, "beforeExpand", subgridDivId, rowid)) {
 									return;
@@ -315,16 +339,21 @@
 						$td1 = $(tr1.cells[pos]);
 						if ($td1.hasClass("ui-sgcollapsed")) {
 							if (p.scroll) {
-								$td1.unbind("click");
+								$td1.off("click");
 							}
-							$td1.bind("click", onClick);
+							$td1.on("click", onClick);
 						}
 					}
 					iRow++;
 				}
 				if (p.subGridOptions.expandOnLoad === true) {
+					var iColSubgrid = p.iColByName.subgrid;
 					$(ts.rows).filter(".jqgrow").each(function (index, row) {
-						$(row.cells[0]).click();
+						$(row.cells[iColSubgrid])
+							.filter(".sgcollapsed")
+							.children(".sgbutton-div")
+							.children(".sgbutton")
+							.click();
 					});
 				}
 				ts.subGridXml = function (xml, sid) {

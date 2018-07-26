@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>test.ts: basis validierung of free-jqgrid.d.ts</title>
+	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+	<link rel="stylesheet" crossorigin="anonymous"
+		href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/themes/redmond/jquery-ui.min.css"
+		integrity="sha384-q4zwqX6xMjL3hNjZkHM8B6Sz6QYZDG+AdOTD2tmX4D5/5HoV4v/lG8en4I6Pbx4m">
+	<link rel="stylesheet" crossorigin="anonymous"
+		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+		integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN">
+    <link rel="stylesheet" href="../../css/ui.jqgrid.css">
+    <!--<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.13.6/css/ui.jqgrid.css">-->
+    <!--<link rel="stylesheet" href="https://rawgit.com/free-jqgrid/jqGrid/master/css/ui.jqgrid.css"/>-->    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/qunit/2.1.1/qunit.min.css">
+	<link rel="stylesheet" crossorigin="anonymous"
+		href="https://cdnjs.cloudflare.com/ajax/libs/qunit/2.1.1/qunit.min.css"
+		integrity="sha384-5mmp1umDVYS+3An1UKql56WMK+9zuJGENQ9dLY62+3/VcODdjin3Xo1X4V+RSrxE">
+    <style>
+        html, body { font-size: 75%; }
+        .ui-jqgrid .ui-jqgrid-bdiv .myAltRowClass {
+            background-color: #DCFFFF;
+            background-image: none;
+        }
+    </style>
+    <script crossorigin="anonymous"
+		src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"
+		integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.11.4/jquery-ui.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qunit/2.1.1/qunit.min.js"></script>
+    <script>
+        $.jgrid = $.jgrid || {};
+        $.jgrid.no_legacy_api = true;
+    </script>
+    <script src="../../js/jquery.jqGrid.src.js"></script>
+    <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.13.6/js/jquery.jqgrid.src.js"></script>-->
+    <!--<script src="https://rawgit.com/free-jqgrid/jqGrid/master/js/jquery.jqgrid.src.js"></script>-->
+</head>
+<body>
+	<div id="outerDiv" style="margin:5px;">
+		<table id="grid"></table>
+	</div>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+
+	<script src="test.js"></script>
+</body>
+</html>

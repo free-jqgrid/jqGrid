@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2014-2016, Dr. Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
+ * @license Copyright (c) 2014-2018, Dr. Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
  * Dual licensed under the MIT and GPL licenses
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl-2.0.html
@@ -9,20 +9,40 @@
  *             and http://stackoverflow.com/q/29457007/315935
  */
 
-/*global jQuery, define */
-(function (factory) {
+/*global jQuery, define, module, require */
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"./jquery.contextmenu-ui",
+			"free-jqgrid/grid.base"
+		], function ($) {
+			return factory($, global, global.document);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			require("./jquery.contextmenu-ui");
+			require("free-jqgrid/grid.base");
+			factory($, root, root.document);
+			return $;
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		factory(jQuery, global, global.document);
 	}
-}(function ($) {
+}(typeof window !== "undefined" ? window : this, function ($, window, document) {
 	"use strict";
 	/*global $ */
     /*jslint plusplus: true, browser: true, eqeq: true, unparam: true, white: true */

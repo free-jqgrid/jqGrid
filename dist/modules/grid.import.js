@@ -7,22 +7,46 @@
 **/
 
 /*jshint eqeqeq:false, eqnull:true, devel:true */
-/*global jQuery, define, xmlJsonClass */
+/*global jQuery, define, xmlJsonClass, exports, module, require */
 /*jslint browser: true, devel: true, white: true */
-(function (factory) {
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.base", "./jsonxml"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"./grid.base",
+			"./jsonxml"
+		], function ($) {
+			return factory($, global);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if (!root) {
+				root = window;
+			}
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			require("./grid.base");
+			require("./jsonxml");
+			factory($, root);
+			return $;
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		factory(jQuery, global);
 	}
-}(function ($) {
+}(typeof window !== "undefined" ? window : this, function ($, window) {
 	"use strict";
+	var jgrid = $.jgrid;
 	// begin module grid.import
 	$.jgrid.extend({
 		jqGridImport: function (o) {
@@ -211,20 +235,14 @@
 				exportOptions: {}
 			}, o || {});
 			return this.each(function () {
-				var url, pdata, params;
+				var pdata;
 				if (!this.grid) {
 					return;
 				}
 				if (o.exptype === "remote") {
 					pdata = $.extend({}, this.p.postData, o.exportOptions);
 					pdata[o.oper] = o.tag;
-					params = jQuery.param(pdata);
-					if (o.url.indexOf("?") !== -1) {
-						url = o.url + "&" + params;
-					} else {
-						url = o.url + "?" + params;
-					}
-					window.location = url;
+					window.location = o.url + (o.url != null && o.url.indexOf("?") >= 0 ? "&" : "?") + $.param(pdata);
 				}
 			});
 		}

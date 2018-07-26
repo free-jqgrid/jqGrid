@@ -1,7 +1,7 @@
 /**
  * jqGrid pivot functions
  * Copyright (c) 2008-2014, Tony Tomov, tony@trirand.com, http://trirand.com/blog/
- * Copyright (c) 2014-2016, Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
+ * Copyright (c) 2014-2018, Oleg Kiriljuk, oleg.kiriljuk@ok-soft-gmbh.com
  * The modul is created initially by Tony Tomov and it's full rewritten
  * for free jqGrid: https://github.com/free-jqgrid/jqGrid by Oleg Kiriljuk
  * Dual licensed under the MIT and GPL licenses:
@@ -10,16 +10,37 @@
 */
 
 /*jshint eqeqeq:false */
-/*global jQuery, define */
+/*global jQuery, define, exports, module, require */
 /*jslint eqeq: true, plusplus: true, continue: true, white: true */
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.grouping"], factory);
-	} else if (typeof exports === "object") {
+		define([
+			"jquery",
+			"./jquery.fmatter",
+			"./grid.grouping"
+		], factory);
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if (!root) {
+				root = window;
+			}
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			require("./jquery.fmatter");
+			require("./grid.grouping");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);
@@ -330,6 +351,7 @@
 				aggrlen = isArray(aggregates) ? aggregates.length : 0,
 				headerLevels = ylen - (aggrlen === 1 ? 1 : 0),
 				colHeaders = [], hasGroupTotal = [], colModel = [], outputItems = [],
+				additionalProperties = ["pivotInfos"],
 				aggrContextTotalRows = new Array(aggrlen), aggrContextGroupTotalRows = new Array(ylen),
 				xIndexLength, indexesOfDataWithTheSameXValues, iYData, itemYData, indexesOfDataWithTheSameYValues,
 				iRows, agr, outputItem, previousY, groupHeaders, iRowsY, xIndex, yIndex, yIndexLength,
@@ -354,7 +376,11 @@
 							break;
 						//case 0: // standard column
 						default:
-							label = aggrlen > 1 ? agr1.label || "{0}" : yIndex.getItem(iyData)[level];
+							label = aggrlen > 1 ?
+									agr1.label || "{0}" :
+									($.isFunction(yDimension[level].label) ?
+										yDimension[level].label :
+										yIndex.getItem(iyData)[level]);
 							name = "y" + iyData;
 							break;
 					}
@@ -363,10 +389,12 @@
 						label: $.isFunction(label) ?
 									(label.call(self, colType === 2 ?
 											{ aggregate: agr1, iAggregate: iAggr, pivotOptions: o } :
-											{ yIndex: yIndex.getItem(iyData), aggregate: agr1, iAggregate: iAggr, yLevel: level, pivotOptions: o })) :
+											(colType === 1 ?
+												{ yIndex: yIndex.getItem(iyData), aggregate: agr1, iAggregate: iAggr, yLevel: level, pivotOptions: o } :
+												{ yData: yIndex.getItem(iyData)[level], yIndex: yIndex.getItem(iyData), yLevel: level, pivotOptions: o }))) :
 									(jgrid.template.apply(self, colType === 2 ?
-											[label, agr1.aggregator, agr1.member, iAggr] :
-											[label, agr1.aggregator, agr1.member, yIndex.getItem(iyData)[level], level]))
+											[String(label), agr1.aggregator, agr1.member, iAggr] :
+											[String(label), agr1.aggregator, agr1.member, yIndex.getItem(iyData)[level], level]))
 					});
 					delete cmItem.member;
 					delete cmItem.aggregator;
@@ -398,7 +426,7 @@
 									titleText: ((headerOnTop && j === iLevel + 1) || (!headerOnTop && j === headerLevels - 1)) ?
 											($.isFunction(totalHeader) ?
 													totalHeader.call(self, previousY1, iLevel) :
-													jgrid.template.call(self, totalHeader || "", previousY1[iLevel], iLevel)) :
+													jgrid.template.call(self, String(totalHeader || ""), previousY1[iLevel], iLevel)) :
 											"",
 									startColumnName: "y" + (iyData - 1) + "t" + iLevel + (aggrlen === 1 ? "" : "a0"),
 									numberOfColumns: aggrlen
@@ -505,7 +533,7 @@
 								x.dataName,
 					frozen: o.frozenStaticCols
 				};
-				if (i < xlen - 1) {
+				if (i < xlen - 1 && !x.skipGrouping && !x.additionalProperty) {
 					// based on xDimension levels build grouping
 					groupingView.groupField.push(cm.name);
 					groupingView.groupSummary.push(o.groupSummary);
@@ -514,12 +542,16 @@
 				cm = $.extend(cm, x);
 				delete cm.dataName;
 				delete cm.footerText;
-				colModel.push(cm);
+				if (!x.additionalProperty) {
+					colModel.push(cm);
+					groupOptions.sortname = cm.name;
+				} else {
+					additionalProperties.push(cm.name);
+				}
 			}
 			if (xlen < 2) {
 				groupOptions.grouping = false; // no grouping is needed
 			}
-			groupOptions.sortname = colModel[xlen - 1].name;
 			groupingView.hideFirstGroupCol = true;
 
 			// Fill hasGroupTotal and groupColumnsPerLevel arrays
@@ -574,7 +606,9 @@
 				colHeaders.push({
 					useColSpanStyle: o.useColSpanStyle,
 					groupHeaders: [{
-						titleText: previousY[k],
+						titleText: ($.isFunction(yDimension[k].label) ?
+										yDimension[k].label.call(self, { yData: previousY[k], yIndex: previousY, yLevel: k, pivotOptions: o }) :
+										previousY[k]),
 						startColumnName: aggrlen === 1 ? "y0" : "y0a0",
 						numberOfColumns: aggrlen
 					}]
@@ -590,7 +624,9 @@
 				// add column headers which corresponds the main data
 				for (k = headerLevels - 1; k >= i; k--) {
 					colHeaders[k].groupHeaders.push({
-						titleText: itemYData[k],
+						titleText: ($.isFunction(yDimension[k].label) ?
+										yDimension[k].label.call(self, { yData: itemYData[k], yIndex: itemYData, yLevel: k, pivotOptions: o }) :
+										itemYData[k]),
 						startColumnName: "y" + iYData + (aggrlen === 1 ? "" : "a0"),
 						numberOfColumns: aggrlen
 					});
@@ -740,7 +776,15 @@
 
 			// return the final result.
 			options.colHeaders = colHeaders;
-			return { colModel: colModel, options: options, rows: outputItems, groupOptions: groupOptions, groupHeaders: colHeaders, summary: summaries };
+			return {
+				colModel: colModel,
+				additionalProperties: additionalProperties,
+				options: options,
+				rows: outputItems,
+				groupOptions: groupOptions,
+				groupHeaders: colHeaders,
+				summary: summaries
+			};
 		},
 		jqPivot: function (data, pivotOpt, gridOpt, ajaxOpt) {
 			return this.each(function () {
@@ -762,7 +806,7 @@
 						footerrow = assocArraySize(pivotGrid.summary) > 0 ? true : false,
 						groupingView = pivotGrid.groupOptions.groupingView,
 						query = jgrid.from.call($t, pivotGrid.rows), i;
-					if (pivotOpt.skipSortByX) {
+					if (!pivotOpt.skipSortByX) {
 						for (i = 0; i < groupingView.groupField.length; i++) {
 							query.orderBy(groupingView.groupField[i],
 								gridOpt != null && gridOpt.groupingView && gridOpt.groupingView.groupOrder != null && gridOpt.groupingView.groupOrder[i] === "desc" ? "d" : "a",
@@ -777,8 +821,8 @@
 						footerrow: footerrow,
 						userDataOnFooter: footerrow,
 						colModel: pivotGrid.colModel,
+						additionalProperties: pivotGrid.additionalProperties,
 						pivotOptions: pivotGrid.options,
-						additionalProperties: ["pivotInfos"],
 						viewrecords: true,
 						sortname: pivotOpt.xDimension[0].dataName // ?????
 					}, pivotGrid.groupOptions, gridOpt || {}));

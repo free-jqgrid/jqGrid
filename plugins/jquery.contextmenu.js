@@ -16,19 +16,34 @@
  *
  */
 
-(function (factory) {
+/*global jQuery, define, module, require */
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
+		define(["jquery"], function ($) {
+			return factory($, global.document);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			factory($, root.document);
+			return $;
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		factory(jQuery, global.document);
 	}
-}(function($) {
+}(typeof window !== "undefined" ? window : this, function($, document) {
 
   var menu, shadow, content, hash, currentTarget;
   var defaults = {

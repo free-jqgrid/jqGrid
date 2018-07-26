@@ -16,18 +16,47 @@
 /*jslint
     browser, devel, for, multivar, this, white
 */
-/*global jQuery, define */
+/*global jQuery, define, exports, module, require */
 
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./grid.base"], factory);
-	} else if (typeof exports === "object") {
+		//console.log("jquery.fmatter AMD");
+		define([
+			"jquery",
+			"./grid.base"
+		], function ($) {
+			//console.log("jquery.fmatter AMD: define callback");
+			return factory($);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		//console.log("jquery.fmatter CommonJS");
+		module.exports = function (root, $) {
+			//console.log("jquery.fmatter CommonJS: in module.exports");
+			if (!root) {
+				root = window;
+			}
+			//console.log("jquery.fmatter CommonJS: before require('jquery')");
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root);
+			}
+			//console.log("jquery.fmatter CommonJS: before require('./grid.base')");
+			require("./grid.base");
+			//console.log("jquery.fmatter CommonJS: before factory");
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
+		//console.log("jquery.fmatter Browser: before factory");
 		factory(jQuery);
 	}
 }(function ($) {
@@ -70,14 +99,13 @@
 				disabled = jgrid.formatter.checkbox.disabled;
 			}
 
-			if (disabled === true && base.isInCommonIconClass.call(this, "fa")) {
-				checkedClasses = checkedClasses || "fa fa-check-square-o fa-lg";
-				checked = buildCheckbox(checkedClasses);
-				unchecked = buildCheckbox(uncheckedClasses || "fa fa-square-o fa-lg");
-			} else if (disabled === true && base.isInCommonIconClass.call(this, "glyphicon")) {
-				checkedClasses = checkedClasses || "glyphicon glyphicon-check";
-				checked = buildCheckbox(checkedClasses);
-				unchecked = buildCheckbox(uncheckedClasses || "glyphicon glyphicon-unchecked");
+			var checkedIcon = base.getIconRes.call(this, "checkbox.checked"),
+				checkedIconClasses = base.getIconRes.call(this, "checkbox.checkedClasses"),
+				uncheckedIcon = base.getIconRes.call(this, "checkbox.unchecked");
+			if (disabled === true && (checkedClasses || uncheckedClasses || checkedIcon || uncheckedIcon)) {
+				checked = buildCheckbox(checkedClasses || checkedIcon);
+				unchecked = buildCheckbox(uncheckedClasses || uncheckedIcon);
+				checkedClasses = checkedIconClasses ? checkedIconClasses : checkedClasses || checkedIcon;
 			} else {
 				checkedClasses = "";
 				title += disabled === true ? " disabled='disabled'" : "";
@@ -93,14 +121,14 @@
 			};
 		},
 		// http://jsperf.com/regex-vs-indexof-vs-in/12
-		/*YesObject = Object.create(null, {
+		/*yesObject = Object.create(null, {
 			1: { value: 1 },
 			x: { value: 1 },
 			"true": { value: 1 },
 			yes: { value: 1 },
 			on: { value: 1 }
 		}),
-		NoObject = Object.create(null, {
+		noObject = Object.create(null, {
 			0: { value: 1 },
 			"false": { value: 1 },
 			no: { value: 1 },
@@ -109,8 +137,8 @@
 		// one can use typeof Object.create != "function" and use either
 		// Object.create or simple object firm, but the performance differences
 		// are so low, that the compatibility to IE8 is more important
-		YesObject = { 1: 1, x: 1, "true": 1, yes: 1, on: 1 },
-		NoObject = { 0: 1, "false": 1, no: 1, off: 1 };
+		yesObject = { 1: 1, x: 1, "true": 1, yes: 1, y: 1, on: 1 },
+		noObject = { 0: 1, "false": 1, no: 1, n: 1, off: 1 };
 	$.extend(true, jgrid, {
 		formatter: { // setting common formatter settings, which are independent from the language and locale
 			date: {
@@ -127,7 +155,7 @@
 			baseLinkUrl: "",
 			showAction: "",
 			target: "",
-			checkbox: { disabled: true },
+			checkbox: { disabled: true, defaultValue: false },
 			idName: "id"
 		},
 		cmTemplate: {
@@ -156,21 +184,21 @@
 				searchoptions: { sopt: ["eq", "ne", "lt", "le", "gt", "ge"] }
 			},
 			booleanCheckbox: {
-				align: "center", formatter: "checkbox",
+				align: "center", formatter: "checkbox", sorttype: "boolean",
 				edittype: "checkbox", editoptions: { value: "true:false", defaultValue: "false" },
 				convertOnSave: function (options) {
 					var newValue = options.newValue,
 						checkboxOptions = parseCheckboxOptions.call(this, options),
 						lowerCaseNewData = String(newValue).toLowerCase();
 
-					if (YesObject[lowerCaseNewData] || lowerCaseNewData === checkboxOptions.yes.toLowerCase()) {
+					if (yesObject[lowerCaseNewData] || lowerCaseNewData === checkboxOptions.yes.toLowerCase()) {
 						newValue = true;
-					} else if (NoObject[lowerCaseNewData] || lowerCaseNewData === checkboxOptions.no.toLowerCase()) {
+					} else if (noObject[lowerCaseNewData] || lowerCaseNewData === checkboxOptions.no.toLowerCase()) {
 						newValue = false;
 					}
 					return newValue;
 				},
-				stype: "select", searchoptions: { sopt: ["eq", "ne"], value: "true:Yes;false:No", noFilterText: "Any" }
+				stype: "checkbox", searchoptions: { sopt: ["eq"], value: "true:false" }
 			},
 			// TODO: add cmTemplate for currency and date
 			actions: function () {
@@ -182,6 +210,7 @@
 					align: "center",
 					label: "",
 					autoResizable: false,
+					title: false,
 					frozen: true,
 					fixed: true,
 					hidedlg: true,
@@ -233,8 +262,8 @@
 				if (isNumber(opts.decimalPlaces)) {
 					// Round to the correct decimal place
 					var nDecimalPlaces = opts.decimalPlaces;
-					var nDecimal = Math.pow(10, nDecimalPlaces);
-					sOutput = String(Math.round(nData * nDecimal) / nDecimal);
+					// we use rounding described in http://www.jacklmoore.com/notes/rounding-in-javascript/
+					sOutput = String(Number(Math.round(nData + "e" + nDecimalPlaces) + "e-" + nDecimalPlaces));
 					nDotIndex = sOutput.lastIndexOf(".");
 					if (nDecimalPlaces > 0) {
 						// Add the decimal separator
@@ -298,13 +327,13 @@
 			if (cellValue === undefined || fmatter.isEmpty(cellValue)) {
 				var defaultValue = getOptionByName(colModel, "defaultValue");
 				if (defaultValue === undefined) {
-					cellValue = checkboxOptions.no;
+					defaultValue = checkboxOptions.no;
 				}
 				cellValue = defaultValue;
 			}
 			// see http://jsperf.com/regex-vs-indexof-vs-in/12
 			cellValue = String(cellValue).toLowerCase();
-			return YesObject[cellValue] || cellValue === checkboxOptions.yes.toLowerCase() ?
+			return yesObject[cellValue] || cellValue === checkboxOptions.yes.toLowerCase() ?
 					checkboxOptions.checked :
 					checkboxOptions.unchecked;
 		};
@@ -333,7 +362,7 @@
 			$elem = $(elem);
 
 		return (checkboxOptions.checkedClasses ?
-					jgrid.hasAllClasses($elem.children("i"), checkboxOptions.checkedClasses) :
+					jgrid.hasAllClasses($elem.children("i,svg"), checkboxOptions.checkedClasses) :
 					$elem.children("input").is(":checked")) ?
 				checkboxOptions.yes :
 				checkboxOptions.no;
@@ -460,9 +489,11 @@
 		};
 	};
 	$FnFmatter.showlink.pageFinalization = function (iCol) {
-		var $self = $(this), p = this.p, colModel = p.colModel, cm = colModel[iCol], iRow, rows = this.rows, nRows = rows.length, row, td,
+		var $self = $(this), p = this.p, cm = p.colModel[iCol],
+			wrapperClassName = p.autoResizing.wrapperClassName,
+			iRow, rows = this.rows, nRows = rows.length, row, td,
 			onClick = function (e) {
-				var $tr = $(this).closest(".jqgrow");
+				var $td = $(this).closest("tr.jqgrow>td"), $tr = $td.parent(), iCol = $td[0].cellIndex, cm = p.colModel[iCol];
 				if ($tr.length > 0) {
 					return cm.formatoptions.onClick.call($self[0], {
 						iCol: iCol,
@@ -481,11 +512,11 @@
 				row = rows[iRow];
 				if ($(row).hasClass("jqgrow")) {
 					td = row.cells[iCol];
-					if (cm.autoResizable && td != null && $(td.firstChild).hasClass(p.autoResizing.wrapperClassName)) {
+					if (cm.autoResizable && td != null && $(td.firstChild).hasClass(wrapperClassName)) {
 						td = td.firstChild;
 					}
 					if (td != null) {
-						$(td.firstChild).bind("click", onClick);
+						$(td.firstChild).on("click", onClick);
 					}
 				}
 			}
@@ -573,7 +604,7 @@
 	$FnFmatter.select = function (cellval, opts) {
 		var ret = [], colModel = opts.colModel, defaultValue,
 			op = $.extend({}, colModel.editoptions || {}, colModel.formatoptions || {}),
-			oSelect = op.value, sep = op.separator || ":", delim = op.delimiter || ";";
+			oSelect = typeof op.value === "function" ? op.value() : op.value, sep = op.separator || ":", delim = op.delimiter || ";";
 		if (oSelect) {
 			var msl = op.multiple === true ? true : false, scell = [], sv,
 			mapFunc = function (n, j) { if (j > 0) { return n; } };
@@ -620,7 +651,7 @@
 		// jqGrid specific
 		var colModel = opts.colModel, $fnDefaultFormat = $FnFmatter.defaultFormat,
 			op = $.extend({}, colModel.editoptions || {}, colModel.formatoptions || {}),
-			oSelect = op.value, sep = op.separator || ":", delim = op.delimiter || ";",
+			oSelect = typeof op.value === "function" ? op.value() : op.value, sep = op.separator || ":", delim = op.delimiter || ";",
 			defaultValue, defaultValueDefined = op.defaultValue !== undefined,
 			isMultiple = op.multiple === true ? true : false, sv, so, i, nOpts, selOptions = {},
 			mapFunc = function (n, j) { if (j > 0) { return n; } };
@@ -666,17 +697,11 @@
 			};
 	};
 	$FnFmatter.rowactions = function (e, act) {
-		var $tr = $(this).closest("tr.jqgrow"), rid = $tr.attr("id"),
+		var $td = $(this).closest("tr.jqgrow>td"), $tr = $td.parent(), rid = $tr.attr("id"),
 			$id = $(this).closest("table.ui-jqgrid-btable").attr("id").replace(/_frozen([^_]*)$/, "$1"),
 			$grid = $("#" + jgrid.jqID($id)), $t = $grid[0], p = $t.p, i, n, customAction, actop,
-			getTop = function () {
-				var tr = $tr[0], gbox = $grid.closest(".ui-jqgrid")[0];
-				if (tr.getBoundingClientRect != null && gbox.getBoundingClientRect != null) {
-					return tr.getBoundingClientRect().top + $tr.outerHeight() - gbox.getBoundingClientRect().top;
-				}
-				return $tr.offset().top + $tr.outerHeight() - $(gbox).offset().top;
-			},
-			cm = p.colModel[jgrid.getCellIndex(this)],
+			relativeTop = jgrid.getRelativeRect.call($t, $tr).top,
+			cm = p.colModel[$td[0].cellIndex],
 			op = $.extend(true, { extraparam: {} }, jgrid.actionsNav || {},	p.actionsNavOptions || {}, cm.formatoptions || {});
 
 		if (p.editOptions !== undefined) {
@@ -719,14 +744,14 @@
 			case "del":
 				op.delOptions = op.delOptions || {};
 				if (op.delOptions.top === undefined) {
-					op.delOptions.top = getTop();
+					op.delOptions.top = relativeTop;
 				}
 				$grid.jqGrid("delGridRow", rid, op.delOptions);
 				break;
 			case "formedit":
 				op.editOptions = op.editOptions || {};
 				if (op.editOptions.top === undefined) {
-					op.editOptions.top = getTop();
+					op.editOptions.top = relativeTop;
 					op.editOptions.recreateForm = true;
 				}
 				$grid.jqGrid("editGridRow", rid, op.editOptions);
@@ -748,33 +773,30 @@
 		return false; // prevent other processing of the click on the row
 	};
 	$FnFmatter.actions = function (cellval, opts, rwd, act) {
-		var rowid = opts.rowId, str = "", $t = this, p = $t.p, $self = $($t), i, customAction, info, displayMask = {},
+		var rowid = opts.rowId, str = "", $t = this, $self = $($t), i, info, customAction, displayMask = {},
 			edit = getGridRes.call($self, "edit") || {},
 			op = $.extend({
-				editbutton: true,
-				delbutton: true,
-				editformbutton: false,
-				commonIconClass: "ui-icon",
-				editicon: "ui-icon-pencil",
-				delicon: "ui-icon-trash",
-				saveicon: "ui-icon-disk",
-				cancelicon: "ui-icon-cancel",
-				savetitle: edit.bSubmit || "",
-				canceltitle: edit.bCancel || ""
-			},
-			getGridRes.call($self, "nav") || {},
-			jgrid.nav || {},
-			p.navOptions || {},
-			getGridRes.call($self, "actionsNav") || {},
-			jgrid.actionsNav || {},
-			p.actionsNavOptions || {},
-			opts.colModel.formatoptions || {}),
+					editbutton: true,
+					delbutton: true,
+					editformbutton: false,
+					commonIconClass: "ui-icon",
+					editicon: "ui-icon-pencil",
+					delicon: "ui-icon-trash",
+					saveicon: "ui-icon-disk",
+					cancelicon: "ui-icon-cancel",
+					savetitle: edit.bSubmit || "",
+					canceltitle: edit.bCancel || ""
+				},
+				getGridRes.call($self, "nav") || {},
+				jgrid.nav || {},
+				$t.p.navOptions || {},
+				getGridRes.call($self, "actionsNav") || {},
+				jgrid.actionsNav || {},
+				$t.p.actionsNavOptions || {},
+				(opts.colModel || {}).formatoptions || {}),
 			cssIconClass = function (name) {
 				return jgrid.mergeCssClasses(op.commonIconClass, op[name + "icon"]);
 			},
-			hoverClass = $self.jqGrid("getGuiStyles", "states.hover"),
-			hoverAttributes = "onmouseover=\"jQuery(this).addClass('" + hoverClass +
-				"');\" onmouseout=\"jQuery(this).removeClass('" + hoverClass + "');\"",
 			buttonInfos = [
 				{ action: "edit", actionName: "formedit", display: op.editformbutton },
 				{ action: "edit", display: !op.editformbutton && op.editbutton },
@@ -789,22 +811,25 @@
 					(options.hidden ? "' style='display:none;" : "") +
 					"' class='" + encodeAttr($self.jqGrid("getGuiStyles", "actionsButton", "ui-pg-div ui-inline-" + action)) + "' " +
 					(idPrefix !== null ? "id='j" + encodeAttr(idPrefix + "Button_" + rowid) : "") +
-					"' onclick=\"return jQuery.fn.fmatter.rowactions.call(this,event,'" + actionName + "');\" " +
-					(options.noHovering ? "" : hoverAttributes) + "><span class='" +
+					"' data-jqactionname=\"" + actionName + "\" " +
+					(options.noHovering ? "" : "' data-jqhovering=\"1\" ") +
+					"><span class='" +
 					encodeAttr(cssIconClass(action)) + "'></span></div>";
 			},
 			n = op.custom != null ? op.custom.length - 1 : -1;
 
 		if (rowid === undefined || fmatter.isEmpty(rowid)) { return ""; }
+
 		if ($.isFunction(op.isDisplayButtons)) {
 			try {
-				displayMask = op.isDisplayButtons.call($t, opts, rwd, act) || {};
+				displayMask = op.isDisplayButtons.call(this, op, rwd, act) || {};
 			} catch (ignore) {}
 		}
 		while (n >= 0) {
 			customAction = op.custom[n--];
 			buttonInfos[customAction.position === "first" ? "unshift" : "push"](customAction);
 		}
+
 		for (i = 0, n = buttonInfos.length; i < n; i++) {
 			info = $.extend({}, buttonInfos[i], displayMask[buttonInfos[i].action] || {});
 			if (info.display !== false) {
@@ -814,51 +839,97 @@
 		return "<div class='" + encodeAttr($self.jqGrid("getGuiStyles", "actionsDiv", "ui-jqgrid-actions")) + "'>" + str + "</div>";
 	};
 	$FnFmatter.actions.pageFinalization = function (iCol) {
-		var $self = $(this), p = this.p, colModel = p.colModel, cm = colModel[iCol],
-			showHideEditDelete = function (show, rowid) {
-				var maxfrozen = 0, tr, $actionsDiv, len = colModel.length, i;
-				for (i = 0; i < len; i++) {
-					// from left, no breaking frozen
-					if (colModel[i].frozen !== true) {
-						break;
+		var $self = $(this), p = this.p, cm = p.colModel[iCol],
+			wrapperClassName = p.autoResizing.wrapperClassName,
+			hoverClass = $self.jqGrid("getGuiStyles", "states.hover"),
+			iRow, rows = this.rows, fbRows = this.grid.fbRows, nRows = rows.length, row,
+			showHideEditDelete = (function (cmName) {
+				return function (show, tr) {
+					var maxfrozen = 0, $actionsDiv, colModel = p.colModel, len = colModel.length, i, iCol = p.iColByName[cmName];
+					for (i = 0; i < len; i++) {
+						// from left, no breaking frozen
+						if (colModel[i].frozen !== true) {
+							break;
+						}
+						maxfrozen = i;
 					}
-					maxfrozen = i;
-				}
-				tr = $self.jqGrid("getGridRowById", rowid);
-				if (tr != null && tr.cells != null) {
-					//$actionsDiv = cm.frozen ? $("tr#"+jgrid.jqID(rid)+" td:eq("+jgrid.getCellIndex(this)+") > div",$grid) :$(this).parent(),
-					iCol = p.iColByName[cm.name];
-					$actionsDiv = $(tr.cells[iCol]).children(".ui-jqgrid-actions");
-					if (cm.frozen && p.frozenColumns && iCol <= maxfrozen) {
-						// uses the corresponding tr from frozen div with the same rowIndex ADDITIONALLY
-						// to the standard action div
-						$actionsDiv = $actionsDiv
-								.add($($self[0].grid.fbRows[tr.rowIndex].cells[iCol])
-								.children(".ui-jqgrid-actions"));
+					if (tr != null && tr.cells != null) {
+						$actionsDiv = $(tr.cells[iCol]).children(".ui-jqgrid-actions");
+						if (colModel[iCol].frozen && p.frozenColumns && iCol <= maxfrozen) {
+							// uses the corresponding tr from frozen div with the same rowIndex ADDITIONALLY
+							// to the standard action div
+							$actionsDiv = $actionsDiv
+									.add($($self[0].grid.fbRows[tr.rowIndex].cells[iCol])
+									.children(".ui-jqgrid-actions"));
+						}
+						if (show) {
+							$actionsDiv.find(">.ui-inline-edit,>.ui-inline-del").show();
+							$actionsDiv.find(">.ui-inline-save,>.ui-inline-cancel").hide();
+						} else {
+							$actionsDiv.find(">.ui-inline-edit,>.ui-inline-del").hide();
+							$actionsDiv.find(">.ui-inline-save,>.ui-inline-cancel").show();
+						}
 					}
-					if (show) {
-						$actionsDiv.find(">.ui-inline-edit,>.ui-inline-del").show();
-						$actionsDiv.find(">.ui-inline-save,>.ui-inline-cancel").hide();
-					} else {
-						$actionsDiv.find(">.ui-inline-edit,>.ui-inline-del").hide();
-						$actionsDiv.find(">.ui-inline-save,>.ui-inline-cancel").show();
-					}
-				}
-			},
+				};
+			})(cm.name),
 			showEditDelete = function (e, rowid) {
-				showHideEditDelete(true, rowid);
+				var tr = $self.jqGrid("getGridRowById", rowid);
+				showHideEditDelete(true, tr);
 				return false;
 			},
 			hideEditDelete = function (e, rowid) {
-				showHideEditDelete(false, rowid);
+				var tr = $self.jqGrid("getGridRowById", rowid);
+				showHideEditDelete(false, tr);
 				return false;
-			};
+			},
+			onMouseOver = function (e) {
+				if ($(e.target).closest("div.ui-pg-div").data("jqhovering") === 1) {
+					$(this).addClass(hoverClass);
+				}
+			},
+			onMouseOut = function (e) {
+				if ($(e.target).closest("div.ui-pg-div").data("jqhovering") === 1) {
+					$(this).removeClass(hoverClass);
+				}
+			},
+			onClick = function (e) {
+				return $FnFmatter.rowactions.call(this, e, $(e.target).closest("div.ui-pg-div").data("jqactionname"));
+			},
+			bindEvents = function (td, autoResizable) {
+				if (autoResizable && td != null && $(td.firstChild).hasClass(wrapperClassName)) {
+					td = td.firstChild;
+				}
+				if (td != null) {
+					$(td.firstChild).on("click", onClick);
+					$(td.firstChild).children("div.ui-pg-div")
+						.on("mouseover", onMouseOver)
+						.on("mouseout", onMouseOut);
+				}
+			},
+			bindRowEvents = (function (cmName) {
+				return function (e, options) {
+						var iColToBind = p.iColByName[cmName]; // it could be changed index because of reordering of columns
+						bindEvents(options.tr.cells[iColToBind], p.colModel[iColToBind].autoResizable);
+					};
+			})(cm.name);
+
 		if (cm.formatoptions == null || !cm.formatoptions.editformbutton) {
 			// we use unbind to be sure that we don't register the same events multiple times
-			$self.unbind("jqGridInlineAfterRestoreRow.jqGridFormatter jqGridInlineAfterSaveRow.jqGridFormatter", showEditDelete);
-			$self.bind("jqGridInlineAfterRestoreRow.jqGridFormatter jqGridInlineAfterSaveRow.jqGridFormatter", showEditDelete);
-			$self.unbind("jqGridInlineEditRow.jqGridFormatter", hideEditDelete);
-			$self.bind("jqGridInlineEditRow.jqGridFormatter", hideEditDelete);
+			$self.off("jqGridInlineAfterRestoreRow.jqGridFormatter jqGridInlineAfterSaveRow.jqGridFormatter", showEditDelete);
+			$self.on("jqGridInlineAfterRestoreRow.jqGridFormatter jqGridInlineAfterSaveRow.jqGridFormatter", showEditDelete);
+			$self.off("jqGridInlineEditRow.jqGridFormatter", hideEditDelete);
+			$self.on("jqGridInlineEditRow.jqGridFormatter", hideEditDelete);
+			$self.off("jqGridAfterAddRow.jqGridFormatter", bindRowEvents);
+			$self.on("jqGridAfterAddRow.jqGridFormatter", bindRowEvents);
+		}
+		for (iRow = 0; iRow < nRows; iRow++) {
+			row = rows[iRow];
+			if ($(row).hasClass("jqgrow")) {
+				bindEvents(row.cells[iCol], cm.autoResizable);
+				if (fbRows != null && fbRows[iRow] != null) {
+					bindEvents(fbRows[iRow].cells[iCol], cm.autoResizable);
+				}
+			}
 		}
 	};
 	$.unformat = function (cellval, options, pos, cnt) {
@@ -937,7 +1008,7 @@
 			delim = op.delimiter === undefined ? ";" : op.delimiter;
 
 		if (op.value) {
-			var oSelect = op.value,
+			var oSelect = typeof op.value === "function" ? op.value() : op.value,
 				msl = op.multiple === true ? true : false,
 				scell = [], sv, mapFunc = function (n, k) { if (k > 0) { return n; } };
 			if (msl) { scell = cell.split(","); scell = $.map(scell, function (n) { return $.trim(n); }); }

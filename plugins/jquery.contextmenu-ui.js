@@ -23,21 +23,35 @@
  * Date: 17 March 2015
  */
 
-/*global jQuery, define */
+/*global jQuery, define, module, require */
 /*jslint devel: true, browser: true, plusplus: true, eqeq: true */
-(function (factory) {
+(function (global, factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(["jquery", "./jqdnr", "./jqmodal"], factory);
-	} else if (typeof exports === "object") {
+		define(["jquery"], function ($) {
+			return factory($, global.document);
+		});
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			factory($, root.document);
+			return $;
+		};
 	} else {
 		// Browser globals
-		factory(jQuery);
+		factory(jQuery, global.document);
 	}
-}(function ($) {
+}(typeof window !== "undefined" ? window : this, function ($, document) {
     "use strict";
     var menu, shadow, content, hash, currentTarget,
         versionParts = $.ui != null && typeof $.ui.version === "string" ? /^([0-9]+)\.([0-9]+)\.([0-9]+)$/.exec($.ui.version) : [],
@@ -154,10 +168,18 @@
                 }
             }
             if (!$.isEmptyObject(cur.itemAnchorStyle)) {
-                items.children("a").css(cur.itemAnchorStyle);
+				if (isAncorRequired) {
+					items.children("a").css(cur.itemAnchorStyle);
+				} else {
+					items.css(cur.itemAnchorStyle);
+				}
             }
             if (!$.isEmptyObject(cur.itemIconSpanStyle)) {
-                items.children("a").children("span.ui-icon").css(cur.itemIconSpanStyle).parent("a").css(cur.itemIconAnchorStyle);
+				if (isAncorRequired) {
+					items.children("a").children("span.ui-icon").css(cur.itemIconSpanStyle).parent("a").css(cur.itemIconAnchorStyle);
+				} else {
+					items.children("span.ui-icon").css(cur.itemIconSpanStyle);
+				}
             }
 
             if ($.isEmptyObject(cur.itemHoverStyle)) {

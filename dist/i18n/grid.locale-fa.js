@@ -6,15 +6,27 @@
 **/
 
 /*jslint white: true */
-/*global jQuery */
+/*global jQuery, module, require */
 (function (factory) {
 	"use strict";
 	if (typeof define === "function" && define.amd) {
 		// AMD. Register as an anonymous module.
 		define(["jquery"], factory);
-	} else if (typeof exports === "object") {
+	} else if (typeof module === "object" && module.exports) {
 		// Node/CommonJS
-		factory(require("jquery"));
+		module.exports = function (root, $) {
+			if ($ === undefined) {
+				// require("jquery") returns a factory that requires window to
+				// build a jQuery instance, we normalize how we use modules
+				// that require this pattern but the window provided is a noop
+				// if it's defined (how jquery works)
+				$ = typeof window !== "undefined" ?
+						require("jquery") :
+						require("jquery")(root || window);
+			}
+			factory($);
+			return $;
+		};
 	} else {
 		// Browser globals
 		factory(jQuery);
@@ -33,7 +45,7 @@
 			pgnext: "صفحه بعد",
 			pgprev: "صفحه قبل",
 			pgrecs: "رکورد در صفحه",
-			showhide: "Toggle Expand Collapse Grid",
+			showhide: "تغییر وضعیت نمایش جدول",
 			savetext: "در حال ذخیره..."
 		},
 		search: {
@@ -62,11 +74,11 @@
 				{ op: "AND", text: "کل" },
 				{ op: "OR",  text: "مجموع" }
 			],
-			addGroupTitle: "Add subgroup",
-			deleteGroupTitle: "Delete group",
-			addRuleTitle: "Add rule",
-			deleteRuleTitle: "Delete rule",
-			operandTitle: "Click to select search operation.",
+			addGroupTitle: "اضافه کردن عنوان گروه",
+			deleteGroupTitle: "حذف عنوان گروه",
+			addRuleTitle: "اضافه کردن  عنوانقانون",
+			deleteRuleTitle: "حذف عنوان قانون",
+			operandTitle: "برای انتخاب گزینه های جستجو کلیک کنید",
 			resetTitle: "تنظیم مجدد مقدار جستجو"
 		},
 		edit: {
@@ -120,9 +132,9 @@
 			viewtext: "",
 			viewtitle: "نمایش رکورد های انتخاب شده",
 			savetext: "",
-			savetitle: "Save row",
+			savetitle: "ذخیره سطر",
 			canceltext: "",
-			canceltitle: "Cancel row editing"
+			canceltitle: "انصراف از تغییر سطر"
 		},
 		col: {
 			caption: "نمايش/عدم نمايش ستون",
@@ -155,8 +167,14 @@
 				defaultValue: "0"
 			},
 			date: {
-				dayNames: ["يک", "دو", "سه", "چهار", "پنج", "جمع", "شنب", "يکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه"],
-				monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "ژانويه", "فوريه", "مارس", "آوريل", "مه", "ژوئن", "ژوئيه", "اوت", "سپتامبر", "اکتبر", "نوامبر", "December"],
+				dayNames: [
+					"يک", "دو", "سه", "چهار", "پنج", "جمع", "شنب",
+					"یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه"
+				],
+				monthNames: [
+					"ژانویه", "فوریه", "مارس", "آوریل", "مه", "ژوئن", "ژوئیه", "اوت", "سپتامبر", "اکتبر", "نوامبر", "دسامبر",
+					"ژانویه", "فوریه", "مارس", "آوریل", "مه", "ژوئن", "ژوئیه", "اوت", "سپتامبر", "اکتبر", "نوامبر", "دسامبر"
+				],
 				AmPm: ["ب.ظ", "ب.ظ", "ق.ظ", "ق.ظ"],
 				S: function (b) {
 					return b < 11 || b > 13 ? ["st", "nd", "rd", "th"][Math.min((b - 1) % 10, 3)] : "th";
