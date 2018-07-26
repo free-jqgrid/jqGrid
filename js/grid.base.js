@@ -3107,7 +3107,7 @@
 					var cm = p.colModel[pos], cellAttrFunc, cellValue = tv, rPrefix,
 						result, classes = cm.classes,
 						styleValue = cm.align ? "text-align:" + cm.align + ";" : "",
-						attrStr, matches, value, tilteValue,
+						attrStr, matches, value, titleValue = stripHtml(tv),
 						encodeAttr = function (v) {
 							return typeof v === "string" ? v.replace(/\'/g, "&#39;") : v;
 						},
@@ -3129,7 +3129,7 @@
 						attrStr = cellAttrFunc.call(ts, rowId, cellValue, rawObject, cm, rdata);
 						if (typeof attrStr === "string") {
 							// ??? probably one can create object with properties from the attrStr
-							// and then to use one common function with constructTr to combin the default
+							// and then to use one common function with constructTr to combine the default
 							// properties with the properties used in cellattr and rowattr.
 							// Probably one could use $.extend with the most attributes. The exception are
 							// only class and style attributes which hold multi-values with " " or ";" as separator
@@ -3147,12 +3147,9 @@
 								// An important example is attribute name with "-" in the middle: "data-sometext"
 								matches = /^\s*(\w+[\w|\-]*)\s*=\s*([\"|\'])(.*?)\2(.*)/.exec(attrStr);
 								if (matches === null || matches.length < 5) {
-									if (!tilteValue && cm.title) {
-										tilteValue = cellValue;
-									}
 									return rest + " style='" + encodeAttr(styleValue) + "'" +
 										(classes ? " class='" + encodeAttr(classes) + "'" : "") +
-										(tilteValue ? " title='" + encodeAttr(tilteValue) + "'" : "");
+										((cm.title && titleValue) ? (" title='" + encodeAttr(titleValue) + "'") : "");
 								}
 								value = matches[3];
 								attrStr = matches[4];
@@ -3169,7 +3166,7 @@
 										break;
 									case "title":
 										//quotedTilteValue = quote + value + quote;
-										tilteValue = value;
+										titleValue = value;
 										break;
 									case "style":
 										styleValue += value;
@@ -3183,7 +3180,8 @@
 						}
 					}
 					result = styleValue !== "" ? "style='" + styleValue + "'" : "";
-					result += (classes !== undefined ? (" class='" + classes + "'") : "") + ((cm.title && cellValue) ? (" title='" + stripHtml(tv).replace(/\'/g, "&apos;") + "'") : "");
+					result += (classes !== undefined ? (" class='" + classes + "'") : "");
+					result += ((cm.title && titleValue) ? (" title='" + encodeAttr(titleValue) + "'") : "");
 					result += rest;
 					return result;
 				},
