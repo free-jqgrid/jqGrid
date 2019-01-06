@@ -145,11 +145,12 @@
 						return counter.summary;
 					},
 					normilizeValue = function (value, cmOrPropName) {
-						if (value == null && grp.useDefaultValuesOnGrouping) {
-							var cm = p.iColByName[cmOrPropName] !== undefined ?
+						var cm = p.iColByName[cmOrPropName] !== undefined ?
 									p.colModel[p.iColByName[cmOrPropName]] :
-									p.additionalProperties[p.iPropByName[cmOrPropName]],
-									defaultValue;
+									p.additionalProperties[p.iPropByName[cmOrPropName]];
+						var grpValue=value;
+						if (value == null && grp.useDefaultValuesOnGrouping) {
+							var defaultValue;
 
 							if (cm != null && cm.formatter != null) {
 								if (cm.formatoptions != null && cm.formatoptions.defaultValue !== undefined) {
@@ -157,12 +158,19 @@
 								} else if (typeof cm.formatter === "string") {
 									defaultValue = $($t).jqGrid("getGridRes", "formatter." + cm.formatter + ".defaultValue");
 									if (defaultValue !== undefined) {
-										value = defaultValue;
+										grpValue = defaultValue;
 									}
 								}
 							}
 						}
-						return value;
+						else{
+							if(typeof cm.formatter === "function"){
+								var colpos = p.iColByName[cmOrPropName];
+								var opts = { rowId: irow, colModel: cm, gid: p.id, pos: colpos, rowData: record };
+								grpValue = cm.formatter.call($t,value,opts,record);
+							}
+						}
+						return grpValue;
 					};
 
 				for (i = 0; i < groupLength; i++) {
