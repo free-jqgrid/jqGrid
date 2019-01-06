@@ -11616,7 +11616,7 @@
 	 * http://www.codeproject.com/KB/scripting/json-filtering.aspx
 	 *
 	 * The filter uses JSON entities to hold filter rules and groups. Here is an example of a filter:
-
+	
 	{ "groupOp": "AND",
 		  "groups" : [
 			{ "groupOp": "OR",
@@ -11630,7 +11630,7 @@
 			{ "field": "name", "op": "eq", "data": "Romania" },
 			{ "field": "id", "op": "le", "data": "1"}
 		  ]
-	}
+}
 	*/
 	// begin module grid.filter
 	$.fn.jqFilter = function (arg) {
@@ -12445,22 +12445,17 @@
 	// end module grid.filter
 
 	/**
-		The below work is licensed under Creative Commons GNU LGPL License.
-
-		Original work:
-
+		The below work is licensed under Creative Commons GNU LGPL License.	
+		Original work:	
 		License:     http://creativecommons.org/licenses/LGPL/2.1/
 		Author:      Stefan Goessner/2006
-		Web:         http://goessner.net/
-
-		Modifications made:
-
+		Web:         http://goessner.net/	
+		Modifications made:	
 		Version:     0.9-p5
 		Description: Restructured code, JSLint validated (no strict whitespaces),
 					 added handling of empty arrays, empty strings, and int/floats values.
 		Author:      Michael Schøler/2008-01-29
-		Web:         http://michael.hinnerup.net/blog/2008/01/26/converting-json-to-xml-and-xml-to-json/
-
+		Web:         http://michael.hinnerup.net/blog/2008/01/26/converting-json-to-xml-and-xml-to-json/	
 		Description: json2xml added support to convert functions as CDATA
 					 so it will be easy to write characters that cause some problems when convert
 		Author:      Tony Tomov
@@ -15329,11 +15324,12 @@
 						return counter.summary;
 					},
 					normilizeValue = function (value, cmOrPropName) {
-						if (value == null && grp.useDefaultValuesOnGrouping) {
-							var cm = p.iColByName[cmOrPropName] !== undefined ?
+						var cm = p.iColByName[cmOrPropName] !== undefined ?
 									p.colModel[p.iColByName[cmOrPropName]] :
-									p.additionalProperties[p.iPropByName[cmOrPropName]],
-									defaultValue;
+									p.additionalProperties[p.iPropByName[cmOrPropName]];
+						var grpValue = value;
+						if (value == null && grp.useDefaultValuesOnGrouping) {
+							var defaultValue;
 
 							if (cm != null && cm.formatter != null) {
 								if (cm.formatoptions != null && cm.formatoptions.defaultValue !== undefined) {
@@ -15341,12 +15337,18 @@
 								} else if (typeof cm.formatter === "string") {
 									defaultValue = $($t).jqGrid("getGridRes", "formatter." + cm.formatter + ".defaultValue");
 									if (defaultValue !== undefined) {
-										value = defaultValue;
+										grpValue = defaultValue;
 									}
 								}
 							}
+						} else {
+							if (typeof cm.formatter === "function") {
+								var colpos = p.iColByName[cmOrPropName];
+								var opts = { rowId: irow, colModel: cm, gid: p.id, pos: colpos, rowData: record };
+								grpValue = cm.formatter.call($t, value, opts, record);
+							}
 						}
-						return value;
+						return grpValue;
 					};
 
 				for (i = 0; i < groupLength; i++) {

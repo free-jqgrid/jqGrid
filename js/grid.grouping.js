@@ -148,7 +148,7 @@
 						var cm = p.iColByName[cmOrPropName] !== undefined ?
 									p.colModel[p.iColByName[cmOrPropName]] :
 									p.additionalProperties[p.iPropByName[cmOrPropName]];
-						var grpValue=value;
+						var grpValue = value;
 						if (value == null && grp.useDefaultValuesOnGrouping) {
 							var defaultValue;
 
@@ -162,12 +162,11 @@
 									}
 								}
 							}
-						}
-						else{
-							if(typeof cm.formatter === "function"){
+						} else {
+							if (typeof cm.formatter === "function") {
 								var colpos = p.iColByName[cmOrPropName];
 								var opts = { rowId: irow, colModel: cm, gid: p.id, pos: colpos, rowData: record };
-								grpValue = cm.formatter.call($t,value,opts,record);
+								grpValue = cm.formatter.call($t, value, opts, record);
 							}
 						}
 						return grpValue;
