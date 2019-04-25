@@ -1,0 +1,23 @@
+{
+	"name"			: "free-jqgrid",
+	"version"		: "4.15.5",
+  "authors"	: "Oleg Kiriljuk <oleg.kiriljuk@ok-soft-gmbh.com>",
+	"license"		: "(MIT OR GPL-2.0)",
+	"description"	: "grid as jQuery plugin - fork of jqGrid before licensing change",
+	"keywords"		: [
+    "jqGrid",
+    "jQuery",
+    "JavaScript",
+    "grid",
+    "table",
+    "jQuery",
+    "grid",
+    "TreeGrid",
+    "Subgrid",
+    "sorting",
+    "paging",
+    "editing",
+    "grouping",
+    "searching"
+]
+}
