@@ -1017,6 +1017,9 @@ select.form-control.ui-pg-selbox:not([size]):not([multiple]) {
 	padding: .375em .75em;
 	margin-left: .125em;
 }
+.ui-jqdialog.ui-jqgrid-jquery-ui .fm-button.fm-button-margin {
+	margin: .5em .4em .5em 0;
+}
 .ui-jqdialog .fm-button > span {
 	display: inline-block;
 	vertical-align: middle;

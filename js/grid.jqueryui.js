@@ -375,16 +375,21 @@
 		},
 		columnChooser: function (opts) {
 			var $self = this, self = $self[0], p = self.p, selector, select, dopts, mopts,
-				$dialogContent, multiselectData, listHeight,
+				$dialogContent, multiselectData, listHeight, footer,
 				colModel = p.colModel, nCol = colModel.length, colNames = p.colNames,
 				getMultiselectWidgetData = function ($elem) {
 					return ($UiMultiselect && $UiMultiselect.prototype && $elem.data($UiMultiselect.prototype.widgetFullName || $UiMultiselect.prototype.widgetName)) ||
 						$elem.data("ui-multiselect") || $elem.data("multiselect");
+				},
+				getGuiStyles = function (path, jqClasses) {
+					return $self.jqGrid("getGuiStyles", path, jqClasses);
 				};
 
-			if ($("#colchooser_" + jqID(p.id)).length) { return; }
-			selector = $('<div id="colchooser_' + p.id + '" style="position:relative;overflow:hidden"><div><select multiple="multiple"></select></div></div>');
-			select = $("select", selector);
+			selector = "#colchooser_" + jqID(p.id);
+			if ($(selector).length) { return; }
+			$dialogContent = $('<div id="colchooser_' + p.id + '"><div class="' + getGuiStyles("dialog.body") + '"><select multiple="multiple"></select></div></div>');
+			footer = $('<div class="' + getGuiStyles("dialog.footer") + '" style="text-align:right;"></div>').appendTo($dialogContent);
+			select = $("select", $dialogContent);
 
 			function call(fn, obj) {
 				if (!fn) { return; }
@@ -398,8 +403,8 @@
 			}
 
 			opts = $.extend({
-				width: 400,
-				height: 240,
+				width: "auto",
+				height: "auto",
 				classname: null,
 				done: function (perm) {
 					if (perm) {
@@ -420,11 +425,38 @@
 				   or destroying a dialog (when passed the string
 				   "destroy")
 				   */
-				dlog: "dialog",
-				dialog_opts: {
-					minWidth: 470,
-					dialogClass: "ui-jqdialog"
+				dlog: function (options) {
+					if (options == "destroy") {
+						jgrid.hideModal.call($self, selector);
+						return;
+					}
+					var hoverClasses = $self.jqGrid("getGuiStyles", "states.hover");
+					$.each(options.buttons, function (label, cb) {
+						$('<button class="' + jgrid.mergeCssClasses(
+							"fm-button",
+							"fm-button-margin",
+							$self.jqGrid("getGuiStyles", "dialog.fmButton" + name),
+							$self.jqGrid("getGuiStyles", "dialog.defaultCorner" + name)
+						) + '">' + label + '</button>').on("click", cb)
+						.hover(
+							function () { $(this).addClass(hoverClasses); },
+							function () { $(this).removeClass(hoverClasses); },
+						)
+						.appendTo(footer);
+					});
+					jgrid.createModal.call($self, {
+						themodal: "colchooser_" + p.id,
+						modalhead: "colchooser_head",
+						modalcontent: "colchooser_content"
+					}, $dialogContent, opts, "", "", true);
+					jgrid.viewModal.call($self, selector, {
+						onHide: function (h) {
+							h.w.remove();
+							if (h.o) { h.o.remove(); }
+						}
+					});
 				},
+				dialog_opts: {},
 				/* dlog_opts is either an option object to be passed
 				   to "dlog", or (more likely) a function that creates
 				   the options object.
@@ -440,6 +472,7 @@
 						options.cleanup(true);
 					};
 					return $.extend(true, {
+						title: options.caption,
 						buttons: buttons,
 						close: function () {
 							options.cleanup(true);
@@ -517,14 +550,18 @@
 				   done function with no permutation (to indicate that the
 				   columnChooser was aborted */
 				cleanup: function (calldone) {
-					call(opts.dlog, selector, "destroy");
 					call(opts.msel, select, "destroy");
-					selector.remove();
+					call(opts.dlog, $dialogContent, "destroy");
+					$dialogContent.remove();
 					if (calldone && opts.done) {
 						opts.done.call($self);
 					}
 				},
-				msel_opts: {}
+				msel_opts: {
+					guiStyle: p.guiStyle,
+					iconSet: p.iconSet,
+					locale: p.locale
+				}
 			},
 			$self.jqGrid("getGridRes", "col"),
 			jgrid.col, opts || {});
@@ -539,19 +576,16 @@
 					opts.msel_opts = $.extend($UiMultiselect.defaults, opts.msel_opts);
 				}
 			}
-			if (opts.caption) {
-				selector.attr("title", opts.caption);
-			}
 			if (opts.classname) {
-				selector.addClass(opts.classname);
+				$dialogContent.addClass(opts.classname);
 				select.addClass(opts.classname);
 			}
 			if (opts.width) {
-				$(">div", selector).css({ width: opts.width, margin: "0 auto" });
+				$(">div", $dialogContent).css({ width: opts.width, margin: "0 auto" });
 				select.css("width", opts.width);
 			}
 			if (opts.height) {
-				$(">div", selector).css("height", opts.height);
+				$(">div", $dialogContent).css("height", opts.height);
 				select.css("height", opts.height - 10);
 			}
 
@@ -600,15 +634,9 @@
 			});
 
 			dopts = $.isFunction(opts.dlog_opts) ? opts.dlog_opts.call($self, opts) : opts.dlog_opts;
-			call(opts.dlog, selector, dopts);
+			call(opts.dlog, $dialogContent, dopts);
 			mopts = $.isFunction(opts.msel_opts) ? opts.msel_opts.call($self, opts) : opts.msel_opts;
 			call(opts.msel, select, mopts);
-
-			// fix height of elements of the multiselect widget
-			$dialogContent = $("#colchooser_" + jqID(p.id));
-
-			$dialogContent.css({ margin: "auto" });
-			$dialogContent.find(">div").css({ width: "100%", height: "100%", margin: "auto" });
 
 			multiselectData = getMultiselectWidgetData(select);
 			if (multiselectData) {
@@ -636,10 +664,6 @@
 					}
 				}
 				multiselectData.newColOrder = $.map(colModel, function (cm) { return cm.name; });
-				multiselectData.container.css({ width: "100%", height: "100%", margin: "auto" });
-
-				multiselectData.selectedContainer.css({ width: multiselectData.options.dividerLocation * 100 + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
-				multiselectData.availableContainer.css({ width: (100 - multiselectData.options.dividerLocation * 100) + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
 
 				// set height for both selectedList and availableList
 				multiselectData.selectedList.css("height", "auto");
