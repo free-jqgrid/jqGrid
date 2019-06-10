@@ -1194,6 +1194,54 @@
 			}
 			return basePath;
 		},
+		getIcon: function (iconSetStr, path) {
+			var iconSet = jgrid.icons[iconSetStr], _getIcon, classes;
+			if (iconSet == null) {
+				return "";
+			}
+			_getIcon = function (basePath, path, alternativeRoot) {
+				var pathParts = path.split("."), root, n = pathParts.length, part, i, classes = [];
+				basePath = typeof basePath === "string" ? jgrid.icons[basePath] : basePath;
+				if (basePath == null) {
+					return ""; // error unknown iconSet
+				}
+				root = basePath;
+				if (root.common) {
+					classes.push(root.common);
+				} else if (alternativeRoot && alternativeRoot.common) {
+					classes.push(alternativeRoot.common);
+				}
+				for (i = 0; i < n; i++) {
+					part = pathParts[i];
+					if (!part) {
+						break;
+					}
+					if (i + 1 === n && root.ignoreParents) {
+						// the final level
+						// Verify that ignoreParents mode is set on the level
+						classes = []; // reset array of classes
+					}
+					root = root[part];
+					if (root === undefined) {
+						if (part === "common") { break; }
+						return ""; // error unknown icon path
+					}
+					if (typeof root === "string") {
+						classes.push(root);
+						break;
+					}
+					if (root != null && root.common) {
+						classes.push(root.common);
+					}
+				}
+				return jgrid.mergeCssClasses.apply(jgrid, classes);
+			};
+			classes = _getIcon(iconSetStr, path);
+			if (classes === "" && iconSet.baseIconSet != null) {
+				classes = _getIcon(iconSet.baseIconSet, path, jgrid.icons[iconSetStr]);
+			}
+			return classes || "";
+		},
 		parseDate: function (format, date, newformat, opts) {
 			// It seems that the code was "imported" by Tony from http://blog.stevenlevithan.com/archives/date-time-format
 			// Thus I include the reference to original
@@ -6404,51 +6452,13 @@
 			var $t = this instanceof $ && this.length > 0 ? this[0] : this;
 			if (!$t || !$t.p) { return ""; }
 
-			var p = $t.p, iconSet = jgrid.icons[p.iconSet],
-				getIcon = function (basePath, path, alternativeRoot) {
-					var pathParts = path.split("."), root, n = pathParts.length, part, i, classes = [];
-					basePath = typeof basePath === "string" ? jgrid.icons[basePath] : basePath;
-					if (basePath == null) {
-						return ""; // error unknown iconSet
-					}
-					root = basePath;
-					if (root.common) {
-						classes.push(root.common);
-					} else if (alternativeRoot && alternativeRoot.common) {
-						classes.push(alternativeRoot.common);
-					}
-					for (i = 0; i < n; i++) {
-						part = pathParts[i];
-						if (!part) {
-							break;
-						}
-						if (i + 1 === n && root.ignoreParents) {
-							// the final level
-							// Verify that ignoreParents mode is set on the level
-							classes = []; // reset array of classes
-						}
-						root = root[part];
-						if (root === undefined) {
-							if (part === "common") { break; }
-							return ""; // error unknown icon path
-						}
-						if (typeof root === "string") {
-							classes.push(root);
-							break;
-						}
-						if (root != null && root.common) {
-							classes.push(root.common);
-						}
-					}
-					return jgrid.mergeCssClasses.apply(this, classes);
-				};
-
+			var p = $t.p, iconSet = jgrid.icons[p.iconSet];
 			if (iconSet == null) {
 				return "";
 			}
-			var classes = getIcon(p.iconSet, path);
+			var classes = jgrid.getIcon(p.iconSet, path);
 			if (classes === "" && iconSet.baseIconSet != null) {
-				classes = getIcon(iconSet.baseIconSet, path, jgrid.icons[p.iconSet]);
+				classes = jgrid.getIcon(iconSet.baseIconSet, path, jgrid.icons[p.iconSet]);
 			}
 			return classes || "";
 		},

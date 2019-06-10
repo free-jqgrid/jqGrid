@@ -629,6 +629,7 @@ declare namespace FreeJqGrid {
 		getGridComponent(componentName: ComponentName, $p: HTMLElement | JQuery): JQuery;
 		getGridComponentId(this: BodyTable, componentName: ComponentName): string;
 		getGridComponentIdSelector(this: BodyTable, componentName: ComponentName): string;
+		getIcon(iconSetStr: string, path: string): string;
 		getMethod(this: JqGridStatic, methodName: string): Function;
 		getRelativeRect(this: BodyTable, element: Element | JQuery): JQueryCoordinates;
 		getRes(basePath: Object, path: string): any;
