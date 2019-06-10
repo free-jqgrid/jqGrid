@@ -60,6 +60,9 @@
 
 $.widget("ui.multiselect", {
   options: {
+		guiStyle: 'jQueryUI',
+		iconSet: 'jQueryUI',
+		locale: 'en-US',
 		sortable: true,
 		searchable: true,
 		doubleClickable: true,
@@ -74,24 +77,52 @@ $.widget("ui.multiselect", {
 			return text1 == text2 ? 0 : (text1 < text2 ? -1 : 1);
 		}
 	},
+	_getLabel: function(path) {
+		var res = $.jgrid.getRes($.jgrid.locales[this.options.locale], path);
+		if (res === undefined) {
+			res = $.jgrid.getRes($.jgrid.locales["en-US"], path);
+		}
+		return res;
+	},
+	_getGuiStyles: function(path) {
+		var res = $.jgrid.getRes($.jgrid.guiStyles[this.options.guiStyle], path);
+		if (res === undefined) {
+			res = $.jgrid.getRes($.jgrid.guiStyles["jQueryUI"], path);
+		}
+		return res;
+	},
+	_getIcon: function(path) {
+		var res = $.jgrid.getIcon(this.options.iconSet, path);
+		if (res === "") {
+			res = $.jgrid.getRes($.jgrid.icons["jQueryUI"], path);
+		}
+		return res;
+	},
 	_create: function() {
 		this.element.hide();
 		this.id = this.element.attr("id");
-		this.container = $('<div class="ui-multiselect ui-helper-clearfix ui-widget"></div>').insertAfter(this.element);
+		this.container = $('<div class="' + this._getGuiStyles("multiselect.container") + '"></div>').insertAfter(this.element);
 		this.count = 0; // number of currently selected options
-		this.selectedContainer = $('<div class="selected"></div>').appendTo(this.container);
-		this.availableContainer = $('<div class="available"></div>')[this.options.availableFirst?'prependTo': 'appendTo'](this.container);
-		this.selectedActions = $('<div class="actions ui-widget-header ui-helper-clearfix"><span class="count">0 '+$.ui.multiselect.locale.itemsCount+'</span><a href="#" class="remove-all">'+$.ui.multiselect.locale.removeAll+'</a></div>').appendTo(this.selectedContainer);
-		this.availableActions = $('<div class="actions ui-widget-header ui-helper-clearfix"><input type="text" class="search empty ui-widget-content ui-corner-all"/><a href="#" class="add-all">'+$.ui.multiselect.locale.addAll+'</a></div>').appendTo(this.availableContainer);
-		this.selectedList = $('<ul class="selected connected-list"><li class="ui-helper-hidden-accessible"></li></ul>').bind('selectstart', function(){return false;}).appendTo(this.selectedContainer);
-		this.availableList = $('<ul class="available connected-list"><li class="ui-helper-hidden-accessible"></li></ul>').bind('selectstart', function(){return false;}).appendTo(this.availableContainer);
+		this.selectedContainer = $('<div class="selected"><div class="' + this._getGuiStyles("multiselect.panel") + '"></div></div>').appendTo(this.container);
+		this.availableContainer = $('<div class="available"><div class="' + this._getGuiStyles("multiselect.panel") + '"></div></div>')[this.options.availableFirst?'prependTo': 'appendTo'](this.container);
+		this.selectedActions = $('<div class="actions ' + this._getGuiStyles("multiselect.heading") + '"><span class="count">0 '+this._getLabel("multiselect.itemsCount")+'</span><div><a href="#" class="remove-all">'+this._getLabel("multiselect.removeAll")+'</a></div></div>').appendTo(this.selectedContainer.children());
+		this.availableActions = $('<div class="actions ' + this._getGuiStyles("multiselect.heading") + '"><input type="text" class="search ' + this._getGuiStyles("multiselect.search") + '"/><div><a href="#" class="add-all">'+this._getLabel("multiselect.addAll")+'</a></div></div>').appendTo(this.availableContainer.children());
+		this.selectedList = $('<ul class="selected ' + this._getGuiStyles("multiselect.list") + '"></ul>').bind('selectstart', function(){return false;}).appendTo(this.selectedContainer.children());
+		this.availableList = $('<ul class="available ' + this._getGuiStyles("multiselect.list") + '"></ul>').bind('selectstart', function(){return false;}).appendTo(this.availableContainer.children());
 
 		var that = this;
 
 		// set dimensions
-		this.container.width(this.element.width()+1);
-		this.selectedContainer.width(Math.floor(this.element.width()*this.options.dividerLocation));
-		this.availableContainer.width(Math.floor(this.element.width()*(1-this.options.dividerLocation)));
+		this.container.css({ "min-width": "470px", margin: "auto" });
+		if (this.options.guiStyle === "jQueryUI") {
+			this.selectedContainer.css({ width: this.options.dividerLocation * 100 + "%" });
+			this.availableContainer.css({ width: (100 - this.options.dividerLocation * 100) + "%" });
+		}
+		else if (this.options.guiStyle === "bootstrap" || this.options.guiStyle === "bootstrap4") {
+			var size = Math.round(this.options.dividerLocation * 12);
+			this.selectedContainer.addClass("col-sm-" + size);
+			this.availableContainer.addClass("col-sm-" + (12 - size));
+		}
 
 		// fix list height to match <option> depending on their individual header's heights
 		this.selectedList.height(Math.max(this.element.height()-this.selectedActions.height(),1));
@@ -195,11 +226,11 @@ $.widget("ui.multiselect", {
 	},
 	_updateCount: function() {
 		this.element.trigger('change');
-		this.selectedContainer.find('span.count').text(this.count+" "+$.ui.multiselect.locale.itemsCount);
+		this.selectedContainer.find('span.count').text(this.count+" "+this._getLabel("multiselect.itemsCount"));
 	},
 	_getOptionNode: function(option) {
 		option = $(option);
-		var node = $('<li class="ui-state-default ui-element" title="'+(option.attr("title") || option.text())+'"><span class="ui-icon"/>'+option.text()+'<a href="#" class="action"><span class="ui-corner-all ui-icon"/></a></li>').hide();
+		var node = $('<li class="ui-element '+this._getGuiStyles("multiselect.listItem")+'" title="'+(option.attr("title") || option.text())+'"><span/>'+option.text()+'<a href="#" class="action"><span class="ui-corner-all"/></a></li>').hide();
 		node.data('optionLink', option);
 		return node;
 	},
@@ -252,16 +283,16 @@ $.widget("ui.multiselect", {
 	_applyItemState: function(item, selected) {
 		if (selected) {
 			if (this.options.sortable) {
-				item.children('span').addClass('ui-icon-arrowthick-2-n-s').removeClass('ui-helper-hidden').addClass('ui-icon');
+				item.children('span').addClass(this._getIcon('multiselect.arrow')).removeClass('ui-helper-hidden');
 			} else {
-				item.children('span').removeClass('ui-icon-arrowthick-2-n-s').addClass('ui-helper-hidden').removeClass('ui-icon');
+				item.children('span').removeClass(this._getIcon('multiselect.arrow')).addClass('ui-helper-hidden');
 			}
-			item.find('a.action span').addClass('ui-icon-minus').removeClass('ui-icon-plus');
+			item.find('a.action span').removeClass(this._getIcon('multiselect.plus')).addClass(this._getIcon('multiselect.minus'));
 			this._registerRemoveEvents(item.find('a.action'));
 
 		} else {
-			item.children('span').removeClass('ui-icon-arrowthick-2-n-s').addClass('ui-helper-hidden').removeClass('ui-icon');
-			item.find('a.action span').addClass('ui-icon-plus').removeClass('ui-icon-minus');
+			item.children('span').removeClass(this._getIcon('multiselect.arrow')).addClass('ui-helper-hidden');
+			item.find('a.action span').removeClass(this._getIcon('multiselect.minus')).addClass(this._getIcon('multiselect.plus'));
 			this._registerAddEvents(item.find('a.action'));
 		}
 
@@ -371,11 +402,102 @@ $.widget("ui.multiselect", {
 	}
 });
 
-$.extend($.ui.multiselect, {
-	locale: {
-		addAll:'Add all',
-		removeAll:'Remove all',
-		itemsCount:'items selected'
+var locInfo = {
+	"de": {
+		addAll: "Alles hinzufügen",
+		removeAll: "Alles entfernen",
+		itemsCount: "ausgewählte Artikel"
+	},
+	"en": {
+		addAll: "Add all",
+		removeAll: "Remove all",
+		itemsCount: "items selected"
+	},
+	"fr": {
+		addAll: "Ajouter tout",
+		removeAll: "Enlever tout",
+		itemsCount: "éléments sélectionnés"
+	},
+	"it": {
+		addAll: "Aggiungere tutto",
+		removeAll: "Rimuovere tutto",
+		itemsCount: "elementi selezionati"
+	}
+};
+
+$.jgrid = $.jgrid || {};
+$.extend(true, $.jgrid, {
+	locales: {
+		"de": { multiselect: locInfo.de },
+		"de-DE": { multiselect: locInfo.de },
+		"en": { multiselect: locInfo.en },
+		"en-US": { multiselect: locInfo.en },
+		"fr": { multiselect: locInfo.fr },
+		"fr-FR": { multiselect: locInfo.fr },
+		"it": { multiselect: locInfo.it },
+		"it-IT": { multiselect: locInfo.it }
+	},
+	guiStyles: {
+		jQueryUI: {
+			multiselect: {
+				container: "ui-multiselect ui-helper-clearfix ui-widget",
+				panel: "",
+				heading: "ui-widget-header ui-helper-clearfix",
+				list: "",
+				listItem: "ui-state-default",
+				search: "ui-widget-content ui-corner-all"
+			}
+		},
+		bootstrap: {
+			multiselect: {
+				container: "ui-multiselect-bootstrap",
+				panel: "panel panel-default",
+				heading: "panel-heading",
+				list: "list-group",
+				listItem: "list-group-item",
+				search: "form-control input-sm"
+			}
+		},
+		bootstrap4: {
+			multiselect: {
+				container: "ui-multiselect-bootstrap",
+				panel: "panel panel-default",
+				heading: "panel-heading",
+				list: "list-group",
+				listItem: "list-group-item",
+				search: "form-control input-sm"
+			}
+		}
+	},
+	icons: {
+		jQueryUI: {
+			multiselect: {
+				minus: "ui-icon-minus",
+				plus: "ui-icon-plus",
+				arrow: "ui-icon-arrowthick-2-n-s"
+			}
+		},
+		fontAwesome: {
+			multiselect: {
+				minus: "fa-minus",
+				plus: "fa-plus",
+				arrow: "fa-arrows-v"
+			}
+		},
+		fontAwesome5: {
+			multiselect: {
+				minus: "fa-minus",
+				plus: "fa-plus",
+				arrow: "fa-arrows-alt-v"
+			}
+		},
+		glyph: {
+			multiselect: {
+				minus: "glyphicon-minus",
+				plus: "glyphicon-plus",
+				arrow: "glyphicon-resize-vertical"
+			}
+		}
 	}
 });
 
