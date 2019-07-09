@@ -396,6 +396,20 @@
 					fn.apply(obj, $.makeArray(arguments).slice(2));
 				}
 			}
+			
+			function resize_select() {
+				var widgetData = getMultiselectWidgetData(select),
+					$thisDialogContent = widgetData.container.closest(".ui-dialog-content");
+
+				if ($thisDialogContent.length > 0 && typeof $thisDialogContent[0].style === "object") {
+					$thisDialogContent[0].style.width = "";
+				} else {
+					$thisDialogContent.css("width", ""); // or just remove width style
+				}
+
+				widgetData.selectedList.height(Math.max(widgetData.selectedContainer.height() - widgetData.selectedActions.outerHeight() -1, 1));
+				widgetData.availableList.height(Math.max(widgetData.availableContainer.height() - widgetData.availableActions.outerHeight() -1, 1));
+			}
 
 			opts = $.extend({
 				width: 400,
@@ -447,19 +461,7 @@
 						modal: options.modal || false,
 						resizable: options.resizable || true,
 						width: options.width + 70,
-						resize: function () {
-							var widgetData = getMultiselectWidgetData(select),
-								$thisDialogContent = widgetData.container.closest(".ui-dialog-content");
-
-							if ($thisDialogContent.length > 0 && typeof $thisDialogContent[0].style === "object") {
-								$thisDialogContent[0].style.width = "";
-							} else {
-								$thisDialogContent.css("width", ""); // or just remove width style
-							}
-
-							widgetData.selectedList.height(Math.max(widgetData.selectedContainer.height() - widgetData.selectedActions.outerHeight() - 1, 1));
-							widgetData.availableList.height(Math.max(widgetData.availableContainer.height() - widgetData.availableActions.outerHeight() - 1, 1));
-						}
+						resize: resize_select
 					}, options.dialog_opts || {});
 				},
 				/* Function to get the permutation array, and pass it to the
@@ -666,6 +668,8 @@
 					opts.init.call(self, multiselectData);
 				}
 			}
+			
+			resize_select();
 		},
 		sortableRows: function (opts) {
 			// Can accept all sortable options and events
