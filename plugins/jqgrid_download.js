@@ -1,5 +1,14 @@
 /**
  * GPL licenses
+ * Author: veto@myridia.com 
+ *
+ *
+ * Usage example:       
+ * ,onClickButton: function(err,res)
+ * {
+ *   jQuery(this).jqGrid("jqgrid_download",'csv');
+ * }
+ *
  */
 
 /*global jQuery, define, module, require */
