@@ -75,7 +75,7 @@
           }
           else
           {
-            alert('Format ' + format + ' is not yet support \n Please use: csv');
+            alert('Format ' + format + ' is not yet supported \n Please use: csv');
           }
 	}
 	});
