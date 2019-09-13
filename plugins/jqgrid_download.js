@@ -47,9 +47,19 @@
 }(typeof window !== "undefined" ? window : this, function ($, window, document){
     "use strict";
     $.jgrid.extend({
-	jqgrid_download: function (format)
+	jqgrid_download: function (format = 'csv', separator = ',', endline = '\n' )
         {
-          if(format === 'CSV' || format === 'csv')
+          format = format.toLowerCase();
+          switch(format)
+	  {
+	    case 'csv':
+              this._csv(separator, endline);
+	      break;
+	    default:
+              alert('Format ' + format + ' is not yet supported \n Please use: csv');
+	  } 
+	}, 
+        _csv: function(separator, endline)
           {
 	    let data   = jQuery(this).jqGrid("getGridParam", "lastSelectedData");
 	    let col    = jQuery(this).jqGrid("getGridParam", "colModel");
@@ -72,8 +82,7 @@
               }
               rows.push(row);
             }
-
-	    let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(separator)).join(endline);
 	    let uri = encodeURI(csv);
             let link = document.createElement("a");
             link.download = jQuery(this).jqGrid("getGridParam", "caption") + '.csv';
@@ -82,10 +91,6 @@
             link.click();
             document.body.removeChild(link);
           }
-          else
-          {
-            alert('Format ' + format + ' is not yet supported \n Please use: csv');
-          }
-	}
+
 	});
 }));
