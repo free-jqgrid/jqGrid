@@ -71,19 +71,32 @@
               header.push(col[c]['name']);
             }
             rows.push(header);
-
             for(let d in data)
             {
               let row = [];
               for(let c in col)
               {
-                let name = col[c]['name'];
-                row.push(data[d][name]);
+               	let name = col[c]['name'];
+		let col_val = data[d][name];
+		if(typeof col_val === 'string')
+		{
+                  if(col_val.indexOf(',') > 0)
+                  {
+                   col_val = '"' + col_val + '"';
+                  }
+                  row.push(col_val);
+		}
+                else
+		{
+                  row.push('');
+		}
               }
               rows.push(row);
             }
-            let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(separator)).join(endline);
-	    let uri = encodeURI(csv);
+
+            let csv  = rows.map(e => e.join(separator)).join(endline);
+            let blob = new Blob([csv],{type: 'text/csv;charset=utf-8;'});
+            let uri  = URL.createObjectURL(blob);
             let link = document.createElement("a");
             link.download = jQuery(this).jqGrid("getGridParam", "caption") + '.csv';
             link.href = uri;
