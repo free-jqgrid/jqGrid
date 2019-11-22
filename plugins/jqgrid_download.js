@@ -80,7 +80,7 @@
 		let col_val = data[d][name];
 		if(typeof col_val === 'string')
 		{
-                  if(col_val.indexOf(',') > 0)
+                  if(col_val.indexOf(',') > -1)
                   {
                    col_val = '"' + col_val + '"';
                   }
