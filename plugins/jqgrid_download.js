@@ -88,7 +88,7 @@
 		}
                 else
 		{
-                  row.push('');
+                  row.push(col_val);
 		}
               }
               rows.push(row);
