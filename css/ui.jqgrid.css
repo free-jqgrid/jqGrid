@@ -325,7 +325,7 @@
 }
 .ui-jqgrid .ui-jqgrid-htable .ui-jqgrid-labels th div.ui-jqgrid-rotate {
 	-webkit-transform: translateX(-50%) translateY(0) rotate(-90deg);
-	-moz-transform: translateX(-50%) translateY(0) (-90deg);
+	-moz-transform: translateX(-50%) translateY(0) rotate(-90deg);
 	-o-transform: translateX(-50%) translateY(0) rotate(-90deg);
 	-ms-transform: translateX(-50%) translateY(0) rotate(-90deg);
 	transform: translateX(-50%) translateY(0) rotate(-90deg);
